@@ -107,7 +107,7 @@ void adns_init(void) {
       adns_write(REG_SROM_Enable, 0x1d);
       _delay_ms(10); // assume that the frame rate is as low as 100fps... even if it should never be that low
       adns_write(REG_SROM_Enable, 0x18);   // start SROM download
-      adns_send(REG_SROM_Load_Burst | 0x80); // write burst destination adress
+      adns_send(REG_SROM_Load_Burst | 0x80); // write burst destination address
       while (--count) {
 		  _delay_us(15);
           adns_send(pgm_read_byte(++ptr));
