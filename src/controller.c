@@ -55,7 +55,7 @@ const byte PROGMEM arrow_keys[] = {
 main
 qwert   yuiop
 asdfg   hjkl;
-zxcvb_ ¶nm,./
+zxcvb_ Â¶nm,./
 
 digits+mouse (hold left thumb)
 E7890   MLMRW  Esc MenuKey Left Middle Right Wheel
@@ -68,8 +68,8 @@ C4561   E<v>"  CapsLock End
 S1232B OID[]\  ScrollLock Break Ins Del
 
 mouse mode (after trackball moved or LMR clicked in digits+mouse mode) immediate
-SCAW?   ?LMRW
-SCAW?   ?LMRW	Win Alt Control Shift Left Middle Right Wheel
+SWAC?   ?LMRW
+SWAC?   ?LMRW	Win Alt Control Shift Left Middle Right Wheel
 CAWS?O ??LMRW   O-release to exit mouse mode, click to exit mouse lock
 
 numlock (replaces main if numlock)
