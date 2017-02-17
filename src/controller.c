@@ -18,15 +18,21 @@ typedef uint8_t  bool;
 void adns_motion(sword* dx, sword* dy);
 void adns_init(void);
 
+#define MB_LEFT  250
+#define MB_MID   251
+#define MB_RIGHT 252
+#define MB_WHEEL 253
+#define MB_LOCK  254
+#define MB_GAME  255
+
 // TODO:
-// - remove delay
+// + remove delay
 // - key debounce
 // - wheel
 // - mouse mode
-// - hold repeat
 // - double tap repeat
-// - no shifts autorelease
-// - num-lock mode
+// + no shifts autorelease
+// + num-lock mode
 // - game mode
 
 //
@@ -39,10 +45,16 @@ const byte PROGMEM basic_keys[] = {
 	KEY_Z, KEY_X, KEY_C, KEY_V, KEY_B, KEY_SPACE, 0, 0,  KEY_SLASH,     KEY_PERIOD, KEY_COMMA, KEY_M, KEY_N, KEY_ENTER, 0, 0, 
 };
 
-const byte PROGMEM numeric_keys[] = {
-	KEY_ESC,   KEY_7, KEY_8, KEY_9, KEY_0,     0, 0, 0,   KEYPAD_SLASH,  KEYPAD_9, KEYPAD_8, KEYPAD_7, KEYPAD_ASTERIX, KEYPAD_ENTER, 0, 0, 
-	KEY_TAB,   KEY_4, KEY_5, KEY_6, KEY_EQUAL, 0, 0, 0,   KEYPAD_MINUS,  KEYPAD_6, KEYPAD_5, KEYPAD_4, KEYPAD_PLUS,    KEYPAD_ENTER, 0, 0, 
-	KEY_TILDE, KEY_1, KEY_2, KEY_3, KEY_MINUS, 0, 0, 0,   KEYPAD_PERIOD, KEYPAD_3, KEYPAD_2, KEYPAD_1, KEYPAD_0,       KEYPAD_ENTER, 0, 0, 
+const byte PROGMEM numeric_mouse_keys[] = {
+	KEY_ESC,   KEY_7, KEY_8, KEY_9, KEY_0,     0, 0, 0,   MB_WHEEL, MB_MID, MB_RIGHT, MB_LEFT, KEY_PRINTSCREEN, MB_LOCK, 0, 0, 
+	KEY_TAB,   KEY_4, KEY_5, KEY_6, KEY_EQUAL, 0, 0, 0,   MB_WHEEL, MB_MID, MB_RIGHT, MB_LEFT, KEY_NUMBER,      MB_LOCK, 0, 0, 
+	KEY_TILDE, KEY_1, KEY_2, KEY_3, KEY_MINUS, 0, 0, 0,   MB_WHEEL, MB_MID, MB_RIGHT, MB_LEFT, MB_GAME,         MB_LOCK, 0, 0, 
+};
+
+const byte PROGMEM numpad_keys[] = {
+	KEY_NUM_LOCK, KEY_7, KEY_8, KEY_9, KEY_0,     0, 0, 0,   KEYPAD_SLASH,  KEYPAD_9, KEYPAD_8, KEYPAD_7, KEYPAD_ASTERIX, KEYPAD_ENTER, 0, 0, 
+	KEY_TAB,      KEY_4, KEY_5, KEY_6, KEY_EQUAL, 0, 0, 0,   KEYPAD_MINUS,  KEYPAD_6, KEYPAD_5, KEYPAD_4, KEYPAD_PLUS,    KEYPAD_ENTER, 0, 0, 
+	KEY_TILDE,    KEY_1, KEY_2, KEY_3, KEY_MINUS, 0, 0, 0,   KEYPAD_PERIOD, KEYPAD_3, KEYPAD_2, KEYPAD_1, KEYPAD_0,       KEYPAD_ENTER, 0, 0, 
 };
 
 const byte PROGMEM arrow_keys[] = {
@@ -51,15 +63,22 @@ const byte PROGMEM arrow_keys[] = {
 	KEY_SCROLL_LOCK, KEY_F1, KEY_F2, KEY_F3, KEY_F12, KEY_PAUSE, 0, 0,   KEY_BACKSLASH, KEY_RIGHT_BRACE, KEY_LEFT_BRACE, KEY_DELETE,  KEY_INSERT, 0, 0, 0, 
 };
 
+const byte PROGMEM main_shift_keys[] = {
+	KEY_SHIFT, KEY_GUI, KEY_ALT, KEY_CTRL, KEY_RIGHT_ALT, 0, 0, 0,
+};
+const byte PROGMEM bottom_shift_keys[] = {
+	KEY_CTRL, KEY_GUI, KEY_ALT, KEY_SHIFT, KEY_RIGHT_ALT, 0, 0, 0,
+};
+
 /*
 main
 qwert   yuiop
 asdfg   hjkl;
-zxcvb_ Â¶nm,./
+zxcvb_ ¶nm,./
 
 digits+mouse (hold left thumb)
-E7890   MLMRW  Esc MenuKey Left Middle Right Wheel
-T456=   PLMRW  Tab PrintScreen 
+E7890   PLMRW  Esc PrintScreen Left Middle Right Wheel
+T456=   MLMRW  Tab MenuKey 
 `123-O LGLMRW  LockMouse GamingMode 
 
 arrows+Fn (hold right thumb)
@@ -68,8 +87,8 @@ C4561   E<v>"  CapsLock End
 S1232B OID[]\  ScrollLock Break Ins Del
 
 mouse mode (after trackball moved or LMR clicked in digits+mouse mode) immediate
-SWAC?   ?LMRW
-SWAC?   ?LMRW	Win Alt Control Shift Left Middle Right Wheel
+SCAW?   ?LMRW
+SCAW?   ?LMRW	Win Alt Control Shift Left Middle Right Wheel
 CAWS?O ??LMRW   O-release to exit mouse mode, click to exit mouse lock
 
 numlock (replaces main if numlock)
@@ -83,10 +102,6 @@ Tasdf   [LMR]	Tab Left Middle Right mouse
 SCAcx_ E`<^v>   Shift Control Alt Enter
 
 */
-
-const byte PROGMEM shift_keys[] = {
-	KEY_GUI, KEY_ALT, KEY_CTRL, KEY_SHIFT, KEY_RIGHT_ALT, 0, 0, 0
-};
 
 typedef struct key_info_struct{
 	byte prev_state;
@@ -102,6 +117,23 @@ byte last_pressed_key;
 byte last_pressed_timer;
 byte last_released_key;
 byte last_released_timer;
+
+byte toShift(index) {
+	return pgm_read_byte(
+		((index & 0x30) == 0x20 ?
+			bottom_shift_keys :
+			main_shift_keys) +
+		(index & 7));
+}
+
+// ; Flamberg rulez!
+// toShift = : i
+//	 pgm_read_byte
+//		 add
+//			 if i & 0x30 == 0x20
+//				 :bottom_shift_keys
+//				 :main_shift_keys
+//			 i & 7
 
 void handleKey(byte index, byte port, byte mask) {
 	key_info_t* k = keys + index;
@@ -124,7 +156,7 @@ void handleKey(byte index, byte port, byte mask) {
 		last_released_key = 0;
 	} else {
 		byte shift_mask = 0;
-		const byte* plane = basic_keys;
+		const byte* plane = (keyboard_leds & KLED_NUM_LOCK) ? numpad_keys : basic_keys;
 		print("\n released="); phex(index);
 		sbyte i = pressed_count;
 		for (;;) {
@@ -140,17 +172,19 @@ void handleKey(byte index, byte port, byte mask) {
 				pressed_keys[j-1] = pressed_keys[j];
 			pressed_count--;
 		}
-		if (k->ignore_release)
+		if (k->ignore_release) {
+		    keyboard_modifier_keys &= ~toShifts(index);
 			return;
+		}
 		last_released_key = index;
 		last_released_timer = 100;
 		while (--i >= 0) {
 			byte s = pressed_keys[i];
 			print("\n try shift="); phex(s);
 			if ((s & 7) == 5) {
-				plane = (s & 8) ? arrow_keys : numeric_keys;
+				plane = (s & 8) ? arrow_keys : numeric_mouse_keys;
 			} else if ((s & 8) != (index & 8)) {
-				shift_mask |= pgm_read_byte(shift_keys + (s & 7));
+				shift_mask |= toShifts(s);
 				print("\n mask="); phex(shift_mask);
 			} else
 				continue;
@@ -226,12 +260,15 @@ int main(void)
 	{
 		sword dx;
 		sword dy;
+		byte prev_shifts_mask = keyboard_modifier_keys;
 		PORTB = ~1;
 		scanRow(0);
 		PORTB = ~2;
 		scanRow(16);
 		PORTB = ~4;
 		scanRow(32);
+		if (prev_shifts_mask != keyboard_modifier_keys)
+			usb_keyboard_press(0, keyboard_modifier_keys);
 		//print("\n");
 		if (last_pressed_timer && --last_pressed_timer == 0) {
 			// TODO: autorepeat(last_pressed_key);
@@ -243,6 +280,5 @@ int main(void)
 		if (dx | dy) {
 			print(" dx="); phex16(dx); print(" dy="); phex16(dy); print("\n");
 		}
-		_delay_ms(1000/200);
 	}
 }

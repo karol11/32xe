@@ -6,18 +6,23 @@
 void usb_init(void);			// initialize everything
 uint8_t usb_configured(void);		// is the USB port configured
 
-int8_t usb_keyboard_press(uint8_t key, uint8_t modifier);
 int8_t usb_keyboard_send(void);
-extern uint8_t keyboard_modifier_keys;
-extern uint8_t keyboard_keys[6];
-extern volatile uint8_t keyboard_leds;
 int8_t usb_mouse_move(int8_t x, int8_t y, int8_t wheel);
 extern uint8_t mouse_buttons;
 
 int8_t usb_debug_putchar(uint8_t c);	// transmit a character
 void usb_debug_flush_output(void);	// immediately transmit any buffered output
+
+extern volatile uint8_t keyboard_leds;
+#define KLED_NUM_LOCK 1
+#define KLED_CAPS_LOCK 2
+#define KLED_SCROLL_LOCK 4
+#define KLED_COMPOSE 8
+#define KLED_KANA 16
+
 #define USB_DEBUG_HID
 
+extern uint8_t keyboard_modifier_keys;
 #define KEY_CTRL	0x01
 #define KEY_SHIFT	0x02
 #define KEY_ALT		0x04
@@ -31,6 +36,8 @@ void usb_debug_flush_output(void);	// immediately transmit any buffered output
 #define KEY_RIGHT_ALT	0x40
 #define KEY_RIGHT_GUI	0x80
 
+int8_t usb_keyboard_press(uint8_t key, uint8_t modifier);
+extern uint8_t keyboard_keys[6];
 #define KEY_A		4
 #define KEY_B		5
 #define KEY_C		6
