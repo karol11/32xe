@@ -84,7 +84,7 @@ extern uint8_t keyboard_keys[6];
 #define KEY_LEFT_BRACE	47
 #define KEY_RIGHT_BRACE	48
 #define KEY_BACKSLASH	49
-#define KEY_NUMBER	50
+//#define KEY_NUMBER	50 // NON_US
 #define KEY_SEMICOLON	51
 #define KEY_QUOTE	52
 #define KEY_TILDE	53
@@ -134,6 +134,11 @@ extern uint8_t keyboard_keys[6];
 #define KEYPAD_9	97	
 #define KEYPAD_0	98		
 #define KEYPAD_PERIOD	99		
+#define KEY_MENU	0x76
+#define KEY_MUTE	0x7f
+#define KEY_VOL_UP	0x80
+#define KEY_VOL_DN	0x81
+
 
 
 

@@ -17,13 +17,22 @@ typedef uint8_t  bool;
 
 void adns_motion(sword* dx, sword* dy);
 void adns_init(void);
+void reflash(void);
 
-#define MB_LEFT  250
-#define MB_MID   251
-#define MB_RIGHT 252
-#define MB_WHEEL 253
-#define MB_LOCK  254
-#define MB_GAME  255
+#define KEY_SPECIAL 245
+#define IMM_SHIFT  245
+#define IMM_GUI    246
+#define IMM_ALT    247
+#define IMM_CTRL   248
+#define IMM_RALT   249
+
+#define MB_GAME  250
+
+#define MB_LEFT  251
+#define MB_MID   252
+#define MB_RIGHT 253
+#define MB_WHEEL 254
+#define MB_LOCK  255
 
 // TODO:
 // + remove delay
@@ -46,9 +55,9 @@ const byte PROGMEM basic_keys[] = {
 };
 
 const byte PROGMEM numeric_mouse_keys[] = {
-	KEY_ESC,   KEY_7, KEY_8, KEY_9, KEY_0,     0, 0, 0,   MB_WHEEL, MB_MID, MB_RIGHT, MB_LEFT, KEY_PRINTSCREEN, MB_LOCK, 0, 0, 
-	KEY_TAB,   KEY_4, KEY_5, KEY_6, KEY_EQUAL, 0, 0, 0,   MB_WHEEL, MB_MID, MB_RIGHT, MB_LEFT, KEY_NUMBER,      MB_LOCK, 0, 0, 
-	KEY_TILDE, KEY_1, KEY_2, KEY_3, KEY_MINUS, 0, 0, 0,   MB_WHEEL, MB_MID, MB_RIGHT, MB_LEFT, MB_GAME,         MB_LOCK, 0, 0, 
+	KEY_ESC,   KEY_7, KEY_8, KEY_9, KEY_0,     0, 0, 0,   MB_WHEEL, MB_MID,     MB_RIGHT,   MB_LEFT,  KEY_PRINTSCREEN, MB_LOCK, 0, 0, 
+	KEY_TAB,   KEY_4, KEY_5, KEY_6, KEY_EQUAL, 0, 0, 0,   MB_WHEEL, MB_MID,     MB_RIGHT,   MB_LEFT,  KEY_MENU,        MB_LOCK, 0, 0, 
+	KEY_TILDE, KEY_1, KEY_2, KEY_3, KEY_MINUS, 0, 0, 0,   MB_GAME,  KEY_VOL_DN, KEY_VOL_UP, KEY_MUTE, 0,               MB_LOCK, 0, 0, 
 };
 
 const byte PROGMEM numpad_keys[] = {
@@ -63,6 +72,19 @@ const byte PROGMEM arrow_keys[] = {
 	KEY_SCROLL_LOCK, KEY_F1, KEY_F2, KEY_F3, KEY_F12, KEY_PAUSE, 0, 0,   KEY_BACKSLASH, KEY_RIGHT_BRACE, KEY_LEFT_BRACE, KEY_DELETE,  KEY_INSERT, 0, 0, 0, 
 };
 
+const byte PROGMEM imm_mouse_mode[] = {
+	IMM_SHIFT, IMM_GUI, IMM_ALT, IMM_CTRL,  IMM_RALT, 0, 0, 0,   MB_WHEEL, MB_MID, MB_RIGHT, MB_LEFT, 0, MB_LOCK, 0, 0, 
+	IMM_SHIFT, IMM_GUI, IMM_ALT, IMM_CTRL,  IMM_RALT, 0, 0, 0,   MB_WHEEL, MB_MID, MB_RIGHT, MB_LEFT, 0, MB_LOCK, 0, 0, 
+	IMM_CTRL,  IMM_GUI, IMM_ALT, IMM_SHIFT, IMM_RALT, 0, 0, 0,   MB_WHEEL, 0,      0,        0,       0, MB_LOCK, 0, 0, 
+};
+
+
+const byte PROGMEM imm_game_mode[] = {
+	KEY_TAB,   KEY_Q,   KEY_W, KEY_E, KEY_R, 0,         0, 0,   KEY_5,    KEY_4,     KEY_3,    KEY_2,   KEY_1,     KEY_ESC, 0, 0, 
+	IMM_SHIFT, KEY_A,   KEY_S, KEY_D, KEY_F, 0,         0, 0,   MB_WHEEL, MB_MID,    MB_RIGHT, MB_LEFT, KEY_TILDE, KEY_ESC, 0, 0, 
+	IMM_CTRL,  IMM_ALT, KEY_X, KEY_C, KEY_V, KEY_SPACE, 0, 0,   MB_GAME,  KEY_RIGHT, KEY_DOWN, KEY_UP,  KEY_LEFT,  KEY_ESC, 0, 0, 
+};
+
 const byte PROGMEM main_shift_keys[] = {
 	KEY_SHIFT, KEY_GUI, KEY_ALT, KEY_CTRL, KEY_RIGHT_ALT, 0, 0, 0,
 };
@@ -71,25 +93,6 @@ const byte PROGMEM bottom_shift_keys[] = {
 };
 
 /*
-main
-qwert   yuiop
-asdfg   hjkl;
-zxcvb_ ¶nm,./
-
-digits+mouse (hold left thumb)
-E7890   PLMRW  Esc PrintScreen Left Middle Right Wheel
-T456=   MLMRW  Tab MenuKey 
-`123-O LGLMRW  LockMouse GamingMode 
-
-arrows+Fn (hold right thumb)
-N7890   HU^DB  NumLock  Home UpPage  DownPage BackSpase
-C4561   E<v>"  CapsLock End 
-S1232B OID[]\  ScrollLock Break Ins Del
-
-mouse mode (after trackball moved or LMR clicked in digits+mouse mode) immediate
-SCAW?   ?LMRW
-SCAW?   ?LMRW	Win Alt Control Shift Left Middle Right Wheel
-CAWS?O ??LMRW   O-release to exit mouse mode, click to exit mouse lock
 
 numlock (replaces main if numlock)
 E&*()   *789+	Esc
@@ -113,12 +116,27 @@ key_info_t keys[16*3];
 byte pressed_keys[32];
 byte pressed_count;
 
+bool mouse_locked = false;
+const byte *immediate_mode = 0;
+
 byte last_pressed_key;
 byte last_pressed_timer;
 byte last_released_key;
 byte last_released_timer;
 
-byte toShift(index) {
+void set_immediate_mode(const byte *new_mode) {
+	if (new_mode == immediate_mode)
+		return;
+	immediate_mode = new_mode;
+	{
+		key_info_t* i = keys;
+		for (; i < keys + 16*3; i++)
+			i->ignore_release = true;
+	}
+	pressed_count = 0;
+}
+
+byte toShift(byte index) {
 	return pgm_read_byte(
 		((index & 0x30) == 0x20 ?
 			bottom_shift_keys :
@@ -134,6 +152,12 @@ byte toShift(index) {
 //				 :bottom_shift_keys
 //				 :main_shift_keys
 //			 i & 7
+
+sbyte clamp_to_sbyte(sbyte v) {
+	return
+		v < -128 ? -128 :
+		v > 127 ? 127 : v;
+}
 
 void handleKey(byte index, byte port, byte mask) {
 	key_info_t* k = keys + index;
@@ -155,8 +179,6 @@ void handleKey(byte index, byte port, byte mask) {
 		last_pressed_timer = last_released_key == index ? 1 : 200;
 		last_released_key = 0;
 	} else {
-		byte shift_mask = 0;
-		const byte* plane = (keyboard_leds & KLED_NUM_LOCK) ? numpad_keys : basic_keys;
 		print("\n released="); phex(index);
 		sbyte i = pressed_count;
 		for (;;) {
@@ -173,24 +195,33 @@ void handleKey(byte index, byte port, byte mask) {
 			pressed_count--;
 		}
 		if (k->ignore_release) {
-		    keyboard_modifier_keys &= ~toShifts(index);
+		    keyboard_modifier_keys &= ~toShift(index);
 			return;
 		}
 		last_released_key = index;
 		last_released_timer = 100;
+		const byte *plane = keyboard_leds & KLED_NUM_LOCK ? basic_keys : numpad_keys;
+		byte shift_mask = 0;
 		while (--i >= 0) {
 			byte s = pressed_keys[i];
-			print("\n try shift="); phex(s);
-			if ((s & 7) == 5) {
+			if ((s & 7) == 5)
 				plane = (s & 8) ? arrow_keys : numeric_mouse_keys;
-			} else if ((s & 8) != (index & 8)) {
-				shift_mask |= toShifts(s);
-				print("\n mask="); phex(shift_mask);
-			} else
+			else if ((s & 8) != (index & 8))
+				shift_mask |= toShift(s);
+			else
 				continue;
 			keys[s].ignore_release = true;
 		}
-		usb_keyboard_press(pgm_read_byte(plane + index), shift_mask);
+		byte key_code = pgm_read_byte(plane + index);
+		if (key_code <  KEY_SPECIAL)
+			usb_keyboard_press(key_code, shift_mask);
+		else if (key_code >= MB_LEFT) {
+			set_immediate_mode(imm_mouse_mode);
+			if (key_code == MB_LOCK)
+				mouse_locked = true;
+			else
+				mouse_buttons |= 1 << (key_code - MB_LEFT);
+		}
 	}
 }
 
@@ -228,7 +259,6 @@ void scanRow(byte row) {
 	//print(" f="); phex(f);
 	//print(" c="); phex(c);
 }
-
 //
 //  ------------------------- MAIN -----------------------
 //
@@ -241,7 +271,7 @@ int main(void)
 	DDRB = 7;
 	DDRC = DDRD = 0;
 	DDRF = 0x13;
-	PORTB = 0xff;
+	PORTB = 0xf8;
 	PORTD = 0xef;
 	PORTF = 0xdf;
 	PORTC = 0xff;
@@ -253,6 +283,13 @@ int main(void)
 			i->ignore_release = true;
 		}
 	}
+	//print(" b="); phex(PINB);
+	//print(" d="); phex(PIND);
+	//print(" f="); phex(PINF);
+	//print(" c="); phex(PINC);
+	if (((PINB | 7) & (PIND | 0xf0) & (PINF | 0x3f) & (PINC | 0xbf)) != 0xff)
+		reflash();
+	PORTB = 0xff;
 	_delay_ms(2000);
 	adns_init();
 	pressed_count = 0;
@@ -278,7 +315,47 @@ int main(void)
 			last_released_key = 0;
 		adns_motion(&dx, &dy);
 		if (dx | dy) {
-			print(" dx="); phex16(dx); print(" dy="); phex16(dy); print("\n");
-		}
+			if (immediate_mode == 0 && keys[16+5].prev_state == 0)
+				set_immediate_mode(imm_mouse_mode);
+			if (immediate_mode == 0)
+				usb_mouse_move(0, 0, clamp_to_sbyte(dx + dy));
+			else
+				usb_mouse_move(clamp_to_sbyte(dx), clamp_to_sbyte(dy), 0);
+ 		}
 	}
+}
+
+void reflash(void) {
+	cli();
+	// disable watchdog, if enabled
+	// disable all peripherals
+	UDCON = 1;
+	USBCON = (1<<FRZCLK);  // disable USB
+	UCSR1B = 0;
+	_delay_ms(5);
+#if defined(__AVR_AT90USB162__)                // Teensy 1.0
+    EIMSK = 0; PCICR = 0; SPCR = 0; ACSR = 0; EECR = 0;
+    TIMSK0 = 0; TIMSK1 = 0; UCSR1B = 0;
+    DDRB = 0; DDRC = 0; DDRD = 0;
+    PORTB = 0; PORTC = 0; PORTD = 0;
+    asm volatile("jmp 0x3E00");
+#elif defined(__AVR_ATmega32U4__)              // Teensy 2.0
+    EIMSK = 0; PCICR = 0; SPCR = 0; ACSR = 0; EECR = 0; ADCSRA = 0;
+    TIMSK0 = 0; TIMSK1 = 0; TIMSK3 = 0; TIMSK4 = 0; UCSR1B = 0; TWCR = 0;
+    DDRB = 0; DDRC = 0; DDRD = 0; DDRE = 0; DDRF = 0; TWCR = 0;
+    PORTB = 0; PORTC = 0; PORTD = 0; PORTE = 0; PORTF = 0;
+    asm volatile("jmp 0x7E00");
+#elif defined(__AVR_AT90USB646__)              // Teensy++ 1.0
+    EIMSK = 0; PCICR = 0; SPCR = 0; ACSR = 0; EECR = 0; ADCSRA = 0;
+    TIMSK0 = 0; TIMSK1 = 0; TIMSK2 = 0; TIMSK3 = 0; UCSR1B = 0; TWCR = 0;
+    DDRA = 0; DDRB = 0; DDRC = 0; DDRD = 0; DDRE = 0; DDRF = 0;
+    PORTA = 0; PORTB = 0; PORTC = 0; PORTD = 0; PORTE = 0; PORTF = 0;
+    asm volatile("jmp 0xFC00");
+#elif defined(__AVR_AT90USB1286__)             // Teensy++ 2.0
+    EIMSK = 0; PCICR = 0; SPCR = 0; ACSR = 0; EECR = 0; ADCSRA = 0;
+    TIMSK0 = 0; TIMSK1 = 0; TIMSK2 = 0; TIMSK3 = 0; UCSR1B = 0; TWCR = 0;
+    DDRA = 0; DDRB = 0; DDRC = 0; DDRD = 0; DDRE = 0; DDRF = 0;
+    PORTA = 0; PORTB = 0; PORTC = 0; PORTD = 0; PORTE = 0; PORTF = 0;
+    asm volatile("jmp 0x1FC00");
+#endif 
 }

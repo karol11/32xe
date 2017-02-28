@@ -144,22 +144,22 @@ static uint8_t PROGMEM keyboard_hid_report_desc[] = {
         0x95, 0x06,          //   Report Count (6),
         0x75, 0x08,          //   Report Size (8),
         0x15, 0x00,          //   Logical Minimum (0),
-        0x25, 0x68,          //   Logical Maximum(104),
+        0x25, 0x82,          //   Logical Maximum(130),
         0x05, 0x07,          //   Usage Page (Key Codes),
         0x19, 0x00,          //   Usage Minimum (0),
-        0x29, 0x68,          //   Usage Maximum (104),
+        0x29, 0x82,          //   Usage Maximum (130),
         0x81, 0x00,          //   Input (Data, Array),
         0xc0                 // End Collection
 };
 
 static uint8_t PROGMEM debug_hid_report_desc[] = {
-	0x06, 0x31, 0xFF,			// Usage Page 0xFF31 (vendor defined)
+	0x06, 0x31, 0xFF,		// Usage Page 0xFF31 (vendor defined)
 	0x09, 0x74,				// Usage 0x74
 	0xA1, 0x53,				// Collection 0x53
 	0x75, 0x08,				// report size = 8 bits
 	0x15, 0x00,				// logical minimum = 0
-	0x26, 0xFF, 0x00,			// logical maximum = 255
-	0x95, DEBUG_TX_SIZE,			// report count
+	0x26, 0xFF, 0x00,		// logical maximum = 255
+	0x95, DEBUG_TX_SIZE,	// report count
 	0x09, 0x75,				// usage
 	0x81, 0x02,				// Input (array)
 	0xC0					// end collection
@@ -878,5 +878,3 @@ ISR(USB_COM_vect)
 	}
 	UECONX = (1<<STALLRQ) | (1<<EPEN);	// stall
 }
-
-
