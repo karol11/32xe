@@ -36,7 +36,7 @@ extern uint8_t keyboard_modifier_keys;
 #define KEY_RIGHT_ALT	0x40
 #define KEY_RIGHT_GUI	0x80
 
-int8_t usb_keyboard_press(uint8_t key, uint8_t modifier);
+int8_t usb_keyboard_press(uint8_t key);
 extern uint8_t keyboard_keys[6];
 #define KEY_A		4
 #define KEY_B		5

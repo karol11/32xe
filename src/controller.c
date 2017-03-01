@@ -20,11 +20,9 @@ void adns_init(void);
 void reflash(void);
 
 #define KEY_SPECIAL 245
-#define IMM_SHIFT  245
-#define IMM_GUI    246
+#define IMM_CTRL   245
 #define IMM_ALT    247
-#define IMM_CTRL   248
-#define IMM_RALT   249
+#define IMM_SHIFT  248
 
 #define MB_GAME  250
 
@@ -32,17 +30,12 @@ void reflash(void);
 #define MB_MID   252
 #define MB_RIGHT 253
 #define MB_WHEEL 254
-#define MB_LOCK  255
 
 // TODO:
-// + remove delay
-// - key debounce
-// - wheel
-// - mouse mode
-// - double tap repeat
-// + no shifts autorelease
-// + num-lock mode
-// - game mode
+// + wheel
+// + mouse mode
+// + double tap repeat
+// + game mode
 
 //
 // --- keymap
@@ -54,16 +47,16 @@ const byte PROGMEM basic_keys[] = {
 	KEY_Z, KEY_X, KEY_C, KEY_V, KEY_B, KEY_SPACE, 0, 0,  KEY_SLASH,     KEY_PERIOD, KEY_COMMA, KEY_M, KEY_N, KEY_ENTER, 0, 0, 
 };
 
-const byte PROGMEM numeric_mouse_keys[] = {
-	KEY_ESC,   KEY_7, KEY_8, KEY_9, KEY_0,     0, 0, 0,   MB_WHEEL, MB_MID,     MB_RIGHT,   MB_LEFT,  KEY_PRINTSCREEN, MB_LOCK, 0, 0, 
-	KEY_TAB,   KEY_4, KEY_5, KEY_6, KEY_EQUAL, 0, 0, 0,   MB_WHEEL, MB_MID,     MB_RIGHT,   MB_LEFT,  KEY_MENU,        MB_LOCK, 0, 0, 
-	KEY_TILDE, KEY_1, KEY_2, KEY_3, KEY_MINUS, 0, 0, 0,   MB_GAME,  KEY_VOL_DN, KEY_VOL_UP, KEY_MUTE, 0,               MB_LOCK, 0, 0, 
+const byte PROGMEM numpad_keys[] = {
+	KEY_ESC,   KEY_7, KEY_8, KEY_9, KEY_0,     KEY_SPACE, 0, 0,   KEYPAD_SLASH,  KEYPAD_9, KEYPAD_8, KEYPAD_7, KEYPAD_ASTERIX, KEYPAD_ENTER, 0, 0, 
+	KEY_TAB,   KEY_4, KEY_5, KEY_6, KEY_EQUAL, KEY_SPACE, 0, 0,   KEYPAD_MINUS,  KEYPAD_6, KEYPAD_5, KEYPAD_4, KEYPAD_PLUS,    KEYPAD_ENTER, 0, 0, 
+	KEY_TILDE, KEY_1, KEY_2, KEY_3, KEY_MINUS, KEY_SPACE, 0, 0,   KEYPAD_PERIOD, KEYPAD_3, KEYPAD_2, KEYPAD_1, KEYPAD_0,       KEYPAD_ENTER, 0, 0, 
 };
 
-const byte PROGMEM numpad_keys[] = {
-	KEY_NUM_LOCK, KEY_7, KEY_8, KEY_9, KEY_0,     0, 0, 0,   KEYPAD_SLASH,  KEYPAD_9, KEYPAD_8, KEYPAD_7, KEYPAD_ASTERIX, KEYPAD_ENTER, 0, 0, 
-	KEY_TAB,      KEY_4, KEY_5, KEY_6, KEY_EQUAL, 0, 0, 0,   KEYPAD_MINUS,  KEYPAD_6, KEYPAD_5, KEYPAD_4, KEYPAD_PLUS,    KEYPAD_ENTER, 0, 0, 
-	KEY_TILDE,    KEY_1, KEY_2, KEY_3, KEY_MINUS, 0, 0, 0,   KEYPAD_PERIOD, KEYPAD_3, KEYPAD_2, KEYPAD_1, KEYPAD_0,       KEYPAD_ENTER, 0, 0, 
+const byte PROGMEM numeric_mouse_keys[] = {
+	KEY_ESC,   KEY_7, KEY_8, KEY_9, KEY_0,     0, 0, 0,   KEY_BACKSPACE, MB_MID,     MB_RIGHT,   MB_LEFT,  KEY_PRINTSCREEN, 0, 0, 0, 
+	KEY_TAB,   KEY_4, KEY_5, KEY_6, KEY_EQUAL, 0, 0, 0,   KEY_QUOTE,     0,          0,          0,        KEY_MENU,        0, 0, 0, 
+	KEY_TILDE, KEY_1, KEY_2, KEY_3, KEY_MINUS, 0, 0, 0,   MB_GAME,       KEY_VOL_DN, KEY_VOL_UP, KEY_MUTE, 0,               0, 0, 0, 
 };
 
 const byte PROGMEM arrow_keys[] = {
@@ -72,39 +65,19 @@ const byte PROGMEM arrow_keys[] = {
 	KEY_SCROLL_LOCK, KEY_F1, KEY_F2, KEY_F3, KEY_F12, KEY_PAUSE, 0, 0,   KEY_BACKSLASH, KEY_RIGHT_BRACE, KEY_LEFT_BRACE, KEY_DELETE,  KEY_INSERT, 0, 0, 0, 
 };
 
-const byte PROGMEM imm_mouse_mode[] = {
-	IMM_SHIFT, IMM_GUI, IMM_ALT, IMM_CTRL,  IMM_RALT, 0, 0, 0,   MB_WHEEL, MB_MID, MB_RIGHT, MB_LEFT, 0, MB_LOCK, 0, 0, 
-	IMM_SHIFT, IMM_GUI, IMM_ALT, IMM_CTRL,  IMM_RALT, 0, 0, 0,   MB_WHEEL, MB_MID, MB_RIGHT, MB_LEFT, 0, MB_LOCK, 0, 0, 
-	IMM_CTRL,  IMM_GUI, IMM_ALT, IMM_SHIFT, IMM_RALT, 0, 0, 0,   MB_WHEEL, 0,      0,        0,       0, MB_LOCK, 0, 0, 
-};
-
-
 const byte PROGMEM imm_game_mode[] = {
-	KEY_TAB,   KEY_Q,   KEY_W, KEY_E, KEY_R, 0,         0, 0,   KEY_5,    KEY_4,     KEY_3,    KEY_2,   KEY_1,     KEY_ESC, 0, 0, 
-	IMM_SHIFT, KEY_A,   KEY_S, KEY_D, KEY_F, 0,         0, 0,   MB_WHEEL, MB_MID,    MB_RIGHT, MB_LEFT, KEY_TILDE, KEY_ESC, 0, 0, 
+	KEY_TAB,   KEY_Q,   KEY_W, KEY_E, KEY_R, 0,         0, 0,   MB_WHEEL, MB_MID,    MB_RIGHT, MB_LEFT, KEY_TILDE, KEY_ESC, 0, 0, 
+	IMM_SHIFT, KEY_A,   KEY_S, KEY_D, KEY_F, 0,         0, 0,   KEY_5,    KEY_4,     KEY_3,    KEY_2,   KEY_1,     KEY_ESC, 0, 0, 
 	IMM_CTRL,  IMM_ALT, KEY_X, KEY_C, KEY_V, KEY_SPACE, 0, 0,   MB_GAME,  KEY_RIGHT, KEY_DOWN, KEY_UP,  KEY_LEFT,  KEY_ESC, 0, 0, 
 };
 
 const byte PROGMEM main_shift_keys[] = {
-	KEY_SHIFT, KEY_GUI, KEY_ALT, KEY_CTRL, KEY_RIGHT_ALT, 0, 0, 0,
+	KEY_LEFT_SHIFT, KEY_LEFT_GUI, KEY_LEFT_ALT, KEY_LEFT_CTRL, 0, 0, 0, 0,
 };
 const byte PROGMEM bottom_shift_keys[] = {
-	KEY_CTRL, KEY_GUI, KEY_ALT, KEY_SHIFT, KEY_RIGHT_ALT, 0, 0, 0,
+	KEY_RIGHT_CTRL, KEY_RIGHT_GUI, KEY_RIGHT_ALT, KEY_RIGHT_SHIFT, 0, 0, 0, 0,
 };
 
-/*
-
-numlock (replaces main if numlock)
-E&*()   *789+	Esc
-T$%^=   /456-	Tab
-`!@#-_ E0123.	numpadEnter
-
-game mode (immediate)  enter-exit: left thumb+GamingMode
-Eqwer   12345	Esc
-Tasdf   [LMR]	Tab Left Middle Right mouse
-SCAcx_ E`<^v>   Shift Control Alt Enter
-
-*/
 
 typedef struct key_info_struct{
 	byte prev_state;
@@ -116,48 +89,61 @@ key_info_t keys[16*3];
 byte pressed_keys[32];
 byte pressed_count;
 
-bool mouse_locked = false;
-const byte *immediate_mode = 0;
+bool game_mode = false;
+bool game_wheel = false;
+byte shifts_to_send = 0;
+byte mb_to_send = 0;
+byte autorepeat_key = 0;
+word delay_since_released = 0;
+word autorepeat_counter = 0;
 
-byte last_pressed_key;
-byte last_pressed_timer;
-byte last_released_key;
-byte last_released_timer;
-
-void set_immediate_mode(const byte *new_mode) {
-	if (new_mode == immediate_mode)
-		return;
-	immediate_mode = new_mode;
+void drop_pressed_keys(void) {
 	{
 		key_info_t* i = keys;
 		for (; i < keys + 16*3; i++)
 			i->ignore_release = true;
 	}
 	pressed_count = 0;
+	mb_to_send = 0;
+	shifts_to_send = 0;
+	for (byte i = 0; i < 6; i++)
+		keyboard_keys[i] = 0;
+	autorepeat_key = 0;
+	autorepeat_counter = 0;
 }
 
-byte toShift(byte index) {
-	return pgm_read_byte(
-		((index & 0x30) == 0x20 ?
-			bottom_shift_keys :
-			main_shift_keys) +
-		(index & 7));
+byte to_shift(byte index) {
+	byte row = index & 0x30;
+	if (row == 0x30) return 0;
+	return pgm_read_byte((row == 0x20 ? bottom_shift_keys : main_shift_keys) + (index & 7));
 }
 
-// ; Flamberg rulez!
-// toShift = : i
-//	 pgm_read_byte
-//		 add
-//			 if i & 0x30 == 0x20
-//				 :bottom_shift_keys
-//				 :main_shift_keys
-//			 i & 7
-
-sbyte clamp_to_sbyte(sbyte v) {
+sbyte clamp_to_sbyte(sword v) {
 	return
 		v < -128 ? -128 :
 		v > 127 ? 127 : v;
 }
+
+byte get_key_code_and_shifts(byte pos, byte index) {
+	const byte *plane = (keyboard_leds & KLED_NUM_LOCK) == 0 ? basic_keys : numpad_keys;
+	shifts_to_send = 0;
+	while (--pos >= 0) {
+		byte s = pressed_keys[pos];
+		if ((s & 7) == 5)
+			plane = (s & 8) ? arrow_keys : numeric_mouse_keys;
+		else if ((s & 8) != (index & 8))
+			shifts_to_send |= to_shift(s);
+		else
+			continue;
+		keys[s].ignore_release = true;
+	}
+	if (game_mode)
+		plane = imm_game_mode;
+	byte key = pgm_read_byte(plane + index);
+	if (plane == numpad_keys && key >= KEY_1 && key <= KEY_0)
+		shifts_to_send ^= KEY_LEFT_SHIFT;
+	return key;
+} 
 
 void handleKey(byte index, byte port, byte mask) {
 	key_info_t* k = keys + index;
@@ -169,17 +155,22 @@ void handleKey(byte index, byte port, byte mask) {
 	if (port == k->prev_state)
 		return;
 	k->prev_state = port;
-	//k->bounce_counter = 0;
+	k->bounce_counter = 2;
 	if (port == 0) { // pressed
 		if (pressed_count >= 32)
 			pressed_count = 0;
 		pressed_keys[pressed_count++] = index;
 		k->ignore_release = false;
-		last_pressed_key = index;
-		last_pressed_timer = last_released_key == index ? 1 : 200;
-		last_released_key = 0;
+		byte key_code = get_key_code_and_shifts(pressed_count, index);
+		if (key_code == MB_WHEEL)
+			game_wheel = true;
+		else if (key_code >= MB_LEFT && key_code <= MB_RIGHT)
+			mb_to_send |= 1 << (key_code - MB_LEFT);
+		if (key_code == autorepeat_key)
+			autorepeat_counter = delay_since_released;
+
 	} else {
-		print("\n released="); phex(index);
+		//print("\n released="); phex(index);
 		sbyte i = pressed_count;
 		for (;;) {
 			if (--i < 0)
@@ -188,39 +179,31 @@ void handleKey(byte index, byte port, byte mask) {
 				break;
 		}
 		{
-			print("\n found="); phex(i);
 			byte j = i;
 			while (++j < pressed_count)
 				pressed_keys[j-1] = pressed_keys[j];
 			pressed_count--;
 		}
-		if (k->ignore_release) {
-		    keyboard_modifier_keys &= ~toShift(index);
+		if (k->ignore_release && !game_mode) {
+		    shifts_to_send &= ~to_shift(index);
 			return;
 		}
-		last_released_key = index;
-		last_released_timer = 100;
-		const byte *plane = keyboard_leds & KLED_NUM_LOCK ? basic_keys : numpad_keys;
-		byte shift_mask = 0;
-		while (--i >= 0) {
-			byte s = pressed_keys[i];
-			if ((s & 7) == 5)
-				plane = (s & 8) ? arrow_keys : numeric_mouse_keys;
-			else if ((s & 8) != (index & 8))
-				shift_mask |= toShift(s);
-			else
-				continue;
-			keys[s].ignore_release = true;
-		}
-		byte key_code = pgm_read_byte(plane + index);
-		if (key_code <  KEY_SPECIAL)
-			usb_keyboard_press(key_code, shift_mask);
-		else if (key_code >= MB_LEFT) {
-			set_immediate_mode(imm_mouse_mode);
-			if (key_code == MB_LOCK)
-				mouse_locked = true;
-			else
-				mouse_buttons |= 1 << (key_code - MB_LEFT);
+		byte key_code = get_key_code_and_shifts(i, index);
+		if (key_code == MB_WHEEL)
+			game_wheel = false;
+		else if (key_code >= MB_LEFT && key_code <= MB_RIGHT)
+			mb_to_send &= ~(1 << (key_code - MB_LEFT));
+		else if (key_code == MB_GAME) {
+			game_mode = !game_mode;
+			drop_pressed_keys();
+			if (!game_mode)
+				game_wheel = false;
+		} else if (key_code < KEY_SPECIAL && !game_mode) {
+			usb_keyboard_press(key_code);
+			if (!game_mode) {
+				autorepeat_key = key_code;
+				delay_since_released = autorepeat_counter = 0;
+			}
 		}
 	}
 }
@@ -258,6 +241,22 @@ void scanRow(byte row) {
 	//print(" d="); phex(d);
 	//print(" f="); phex(f);
 	//print(" c="); phex(c);
+	if (!game_mode)
+		return;
+	byte keys_to_send = 0;
+	keyboard_modifier_keys = 0;
+	for (byte i = 0; i < pressed_count; i++) {
+		byte key = pgm_read_byte(imm_game_mode + i);
+		if (key < KEY_SPECIAL){
+			if (keys_to_send < 6)
+				keyboard_keys[keys_to_send++] = key;
+		} else if (key >= IMM_CTRL && key <= IMM_SHIFT)
+			keyboard_modifier_keys |= pgm_read_byte(bottom_shift_keys + (key - IMM_CTRL));
+	}
+	while (keys_to_send < 6)
+		keyboard_keys[keys_to_send++] = 0;
+	usb_keyboard_send();
+	shifts_to_send = keyboard_modifier_keys;
 }
 //
 //  ------------------------- MAIN -----------------------
@@ -297,31 +296,34 @@ int main(void)
 	{
 		sword dx;
 		sword dy;
-		byte prev_shifts_mask = keyboard_modifier_keys;
 		PORTB = ~1;
 		scanRow(0);
 		PORTB = ~2;
 		scanRow(16);
 		PORTB = ~4;
 		scanRow(32);
-		if (prev_shifts_mask != keyboard_modifier_keys)
-			usb_keyboard_press(0, keyboard_modifier_keys);
-		//print("\n");
-		if (last_pressed_timer && --last_pressed_timer == 0) {
-			// TODO: autorepeat(last_pressed_key);
-			last_pressed_timer = 100;
+		if (shifts_to_send != keyboard_modifier_keys) {
+			usb_keyboard_press(0);
+			shifts_to_send = keyboard_modifier_keys;
 		}
-		if (last_released_timer && --last_released_timer == 0)
-			last_released_key = 0;
 		adns_motion(&dx, &dy);
 		if (dx | dy) {
-			if (immediate_mode == 0 && keys[16+5].prev_state == 0)
-				set_immediate_mode(imm_mouse_mode);
-			if (immediate_mode == 0)
-				usb_mouse_move(0, 0, clamp_to_sbyte(dx + dy));
+			mouse_buttons = mb_to_send;
+			if ((game_mode && !game_wheel) || keys[16+5].prev_state == 0)
+				usb_mouse_move(clamp_to_sbyte(dx), clamp_to_sbyte(-dy), 0);
 			else
-				usb_mouse_move(clamp_to_sbyte(dx), clamp_to_sbyte(dy), 0);
- 		}
+				usb_mouse_move(0, 0, clamp_to_sbyte((dx - dy) / 4));
+ 		} else if (mouse_buttons != mb_to_send) {
+			mouse_buttons = mb_to_send;
+			usb_mouse_move(0, 0, 0);		
+		}
+		if (autorepeat_counter) {
+			if (--autorepeat_counter == 0) {
+				autorepeat_counter = delay_since_released;
+				usb_keyboard_press(autorepeat_key);
+			}
+		} else if (delay_since_released < 0xffff)
+			delay_since_released++;
 	}
 }
 
