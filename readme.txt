@@ -21,15 +21,3 @@ adns9800.h
 	
 controller.c
 	Main program
-	
-
--- ToDo --
-- eliminate delays
-- key debounce (commented-out for now)
-- wheel
-- mouse mode
-- hold repeat
-- double tap repeat
-- no shifts autorelease
-- num-lock mode
-- game mode
