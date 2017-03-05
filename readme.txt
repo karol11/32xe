@@ -25,3 +25,6 @@ adns9800.h
 
 controller.c
 	Main logic
+
+main.c
+	Platform specific entry point
