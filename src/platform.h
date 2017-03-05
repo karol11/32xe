@@ -9,6 +9,6 @@
 #include "print.h"
 
 void init(void);
-void loop(void);
+void loop_step(void);
 
 #endif //_32xe_platform_h_

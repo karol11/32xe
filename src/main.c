@@ -12,7 +12,7 @@ int main(void)
 	_delay_ms(2000);
 	adns_init();
 	for (;;)
-		loop();
+		loop_step();
 }
 
 void reflash(void) {

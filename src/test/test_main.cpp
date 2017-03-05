@@ -215,10 +215,10 @@ namespace {
 		acc.str(std::string());
 		acc << name << ":";
 		init();
-		loop();
-		loop();
-		loop();
-		loop();
+		loop_step();
+		loop_step();
+		loop_step();
+		loop_step();
 	}
 
 	void check(const char *expected) {
@@ -231,25 +231,25 @@ namespace {
 
 	void on(Switch &s) {
 		grid[s.pin][s.row] |= 1 << s.bit;
-		loop();
-		loop();
-		loop();
-		loop();
+		loop_step();
+		loop_step();
+		loop_step();
+		loop_step();
 	}
 
 	void off(Switch &s) {
 		grid[s.pin][s.row] &= ~(1 << s.bit);
-		loop();
-		loop();
-		loop();
-		loop();
-		loop();
+		loop_step();
+		loop_step();
+		loop_step();
+		loop_step();
+		loop_step();
 	}
 
 	void move(sword dx, sword dy) {
 		next_dx = dx;
 		next_dy = dy;
-		loop();
+		loop_step();
 	}
 
 	void test_single_press(Switch &s, const char *expected) {

@@ -14,8 +14,4 @@ typedef uint8_t  bool;
 #define true 1
 #endif
 
-void init(void);
-void loop(void);
-void reflash(void);
-
 #endif

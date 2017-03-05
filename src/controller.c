@@ -1,12 +1,14 @@
 #ifdef TESTS
-#include "mock.h"
+#include "test/mock.h"
 #else
 #include "platform.h"
 #endif
 
 #include "usb_keyboard_mouse_debug.h"
 #include "adns9800.h"
-#include "common.h"
+#include "my_int.h"
+
+void reflash(void);
 
 #define KEY_SPECIAL 245
 #define IMM_CTRL   245
@@ -21,16 +23,10 @@
 #define MB_RIGHT 253
 #define MB_WHEEL 254
 
-// TODO:
-// + wheel
-// + mouse mode
-// + double tap repeat
-// + game mode
-
 //
 // --- keymap
 //
-// rrsfff
+// rrsfff (rr-row, s-side, fff-finger)
 const byte PROGMEM basic_keys[] = {
 	KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_SPACE, 0, 0,  KEY_P,         KEY_O,      KEY_I,     KEY_U, KEY_Y, KEY_ENTER, 0, 0,         
 	KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_SPACE, 0, 0,  KEY_SEMICOLON, KEY_L,      KEY_K,     KEY_J, KEY_H, KEY_ENTER, 0, 0,         
@@ -298,7 +294,7 @@ void init(void) {
 	pressed_count = 0;
 }
 
-void loop(void) {
+void loop_step(void) {
 	sword dx;
 	sword dy;
 	PORTB = ~1;

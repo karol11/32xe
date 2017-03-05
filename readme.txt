@@ -4,6 +4,10 @@ Code is tested with Teensy 2.0 @16MHz
 
 https://www.pjrc.com/teensy/gcc.html
 
+-- Unit Tests --
+
+Tested with msvc2008.
+src\test\test.sln
 
 -- Contents --
 
@@ -18,18 +22,6 @@ adns9800.c
 adns9800.h
 	Mouse sensor support.
 	Code based on https://github.com/pepijndevos/Dwergmuis
-	
-controller.c
-	Main program
-	
 
--- ToDo --
-- eliminate delays
-- key debounce (commented-out for now)
-- wheel
-- mouse mode
-- hold repeat
-- double tap repeat
-- no shifts autorelease
-- num-lock mode
-- game mode
+controller.c
+	Main logic

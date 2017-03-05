@@ -1,7 +1,7 @@
 #ifndef _32xe_mock_h_
 #define _32xe_mock_h_
 
-#include "common.h"
+#include "my_int.h"
 
 #define PROGMEM
 byte pgm_read_byte(const byte* ptr) { return *ptr; }

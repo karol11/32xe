@@ -172,19 +172,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\common.h"
+				RelativePath=".\mock.h"
 				>
 			</File>
 			<File
-				RelativePath=".\main.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\mock.h"
+				RelativePath="..\my_int.h"
 				>
 			</File>
 			<File
 				RelativePath=".\stdint.h"
+				>
+			</File>
+			<File
+				RelativePath=".\test_main.cpp"
 				>
 			</File>
 		</Filter>
