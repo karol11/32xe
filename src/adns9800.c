@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/interrupt.h>
 #include <util/delay.h>
 #include "print.h"
 
@@ -10,6 +11,7 @@
 #define REG_SROM_Load_Burst                      0x62
 #define REG_Power_Up_Reset                       0x3a
 #define REG_LASER_CTRL0                          0x20
+#define REG_CONF_1                               0x0f
 
 
 // f0-clk f1-mo f4-nsc f5-mot d5-mi
@@ -75,15 +77,19 @@ byte adns_read(byte addr) {
 }
 
 void adns_motion(sword* dx, sword* dy) {
+	/*if (ADNS_MOT_PIN & (1 << ADNS_MOT_BIT)) {
+		*dx = *dy = 0;
+		return;
+	}*/
 	adns_com_begin();
 	adns_send(REG_Motion_Burst);
 	_delay_us(100);
 	adns_recv();
 	adns_recv();
-	*dx = adns_recv();
-	*dx |= adns_recv() << 8;
-	*dy = adns_recv();
-	*dy |= adns_recv() << 8;
+	byte lo = adns_recv();
+	*dx = adns_recv() << 8 | lo;
+	lo = adns_recv();
+	*dy = adns_recv() << 8 | lo;
 	adns_com_end();
 	_delay_us(500);
  }
@@ -128,6 +134,6 @@ void adns_init(void) {
   //adns_com_begin();
 	print("\nADNS id="); phex(adns_read(REG_PRODUCT_ID));
 	print("\nADNS id2="); phex(adns_read(1));
+	adns_write(REG_CONF_1, 10);
   adns_com_end();
 }
-

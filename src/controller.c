@@ -1,29 +1,19 @@
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/pgmspace.h>
-#include <util/delay.h>
+#ifdef TESTS
+#include "mock.h"
+#else
+#include "platform.h"
+#endif
+
 #include "usb_keyboard_mouse_debug.h"
-#include "print.h"
-
-#define CPU_PRESCALE(n)	(CLKPR = 0x80, CLKPR = (n))
-
-typedef uint8_t  byte;
-typedef int8_t   sbyte;
-typedef uint16_t word;
-typedef int16_t  sword;
-typedef uint8_t  bool;
-#define false 0
-#define true 1
-
-void adns_motion(sword* dx, sword* dy);
-void adns_init(void);
-void reflash(void);
+#include "adns9800.h"
+#include "common.h"
 
 #define KEY_SPECIAL 245
 #define IMM_CTRL   245
 #define IMM_ALT    247
 #define IMM_SHIFT  248
 
+#define MB_CALC  249?
 #define MB_GAME  250
 
 #define MB_LEFT  251
@@ -89,13 +79,13 @@ key_info_t keys[16*3];
 byte pressed_keys[32];
 byte pressed_count;
 
-bool game_mode = false;
-bool game_wheel = false;
-byte shifts_to_send = 0;
-byte mb_to_send = 0;
-byte autorepeat_key = 0;
-word delay_since_released = 0;
-word autorepeat_counter = 0;
+bool game_mode;
+bool game_wheel;
+byte shifts_to_send;
+byte mb_to_send;
+byte autorepeat_key;
+word delay_since_released;
+word autorepeat_counter;
 
 void drop_pressed_keys(void) {
 	{
@@ -119,18 +109,30 @@ byte to_shift(byte index) {
 }
 
 sbyte clamp_to_sbyte(sword v) {
-	return
-		v < -128 ? -128 :
-		v > 127 ? 127 : v;
+	return (sbyte) v;
+//		v < -128 ? -128 :
+//		v > 127 ? 127 : v;
 }
 
-byte get_key_code_and_shifts(byte pos, byte index) {
+byte peek_key_code(sbyte pos, byte index) {
+	const byte *plane = (keyboard_leds & KLED_NUM_LOCK) == 0 ? basic_keys : numpad_keys;
+	while (--pos >= 0) {
+		byte s = pressed_keys[pos];
+		if ((s & 7) == 5)
+			plane = (s & 8) ? arrow_keys : (plane == numpad_keys ? basic_keys : numeric_mouse_keys);
+	}
+	if (game_mode)
+		plane = imm_game_mode;
+	return pgm_read_byte(plane + index);
+}
+
+byte get_key_code(sbyte pos, byte index) {
 	const byte *plane = (keyboard_leds & KLED_NUM_LOCK) == 0 ? basic_keys : numpad_keys;
 	shifts_to_send = 0;
 	while (--pos >= 0) {
 		byte s = pressed_keys[pos];
 		if ((s & 7) == 5)
-			plane = (s & 8) ? arrow_keys : numeric_mouse_keys;
+			plane = (s & 8) ? arrow_keys : (plane == numpad_keys ? basic_keys : numeric_mouse_keys);
 		else if ((s & 8) != (index & 8))
 			shifts_to_send |= to_shift(s);
 		else
@@ -161,16 +163,16 @@ void handleKey(byte index, byte port, byte mask) {
 			pressed_count = 0;
 		pressed_keys[pressed_count++] = index;
 		k->ignore_release = false;
-		byte key_code = get_key_code_and_shifts(pressed_count, index);
+		byte key_code = peek_key_code(pressed_count-1, index);
 		if (key_code == MB_WHEEL)
 			game_wheel = true;
-		else if (key_code >= MB_LEFT && key_code <= MB_RIGHT)
+		else if (key_code >= MB_LEFT && key_code <= MB_RIGHT) {
+			key_code = get_key_code(pressed_count-1, index);
 			mb_to_send |= 1 << (key_code - MB_LEFT);
-		if (key_code == autorepeat_key)
+		} if (key_code == autorepeat_key)
 			autorepeat_counter = delay_since_released;
 
 	} else {
-		//print("\n released="); phex(index);
 		sbyte i = pressed_count;
 		for (;;) {
 			if (--i < 0)
@@ -188,7 +190,7 @@ void handleKey(byte index, byte port, byte mask) {
 		    shifts_to_send &= ~to_shift(index);
 			return;
 		}
-		byte key_code = get_key_code_and_shifts(i, index);
+		byte key_code = get_key_code(i, index);
 		if (key_code == MB_WHEEL)
 			game_wheel = false;
 		else if (key_code >= MB_LEFT && key_code <= MB_RIGHT)
@@ -199,6 +201,7 @@ void handleKey(byte index, byte port, byte mask) {
 			if (!game_mode)
 				game_wheel = false;
 		} else if (key_code < KEY_SPECIAL && !game_mode) {
+			keyboard_modifier_keys = shifts_to_send;
 			usb_keyboard_press(key_code);
 			if (!game_mode) {
 				autorepeat_key = key_code;
@@ -261,11 +264,14 @@ void scanRow(byte row) {
 //
 //  ------------------------- MAIN -----------------------
 //
-int main(void)
-{
-	CPU_PRESCALE(0);
-	usb_init();
-	while (!usb_configured()) /* wait */ ;
+void init(void) {
+	game_mode = false;
+	game_wheel = false;
+	shifts_to_send = 0;
+	mb_to_send = 0;
+	autorepeat_key = 0;
+	delay_since_released = 0;
+	autorepeat_counter = 0;
 
 	DDRB = 7;
 	DDRC = DDRD = 0;
@@ -289,75 +295,41 @@ int main(void)
 	if (((PINB | 7) & (PIND | 0xf0) & (PINF | 0x3f) & (PINC | 0xbf)) != 0xff)
 		reflash();
 	PORTB = 0xff;
-	_delay_ms(2000);
-	adns_init();
 	pressed_count = 0;
-	for (;;)
-	{
-		sword dx;
-		sword dy;
-		PORTB = ~1;
-		scanRow(0);
-		PORTB = ~2;
-		scanRow(16);
-		PORTB = ~4;
-		scanRow(32);
-		if (shifts_to_send != keyboard_modifier_keys) {
-			usb_keyboard_press(0);
-			shifts_to_send = keyboard_modifier_keys;
-		}
-		adns_motion(&dx, &dy);
-		if (dx | dy) {
-			mouse_buttons = mb_to_send;
-			if ((game_mode && !game_wheel) || keys[16+5].prev_state == 0)
-				usb_mouse_move(clamp_to_sbyte(dx), clamp_to_sbyte(-dy), 0);
-			else
-				usb_mouse_move(0, 0, clamp_to_sbyte((dx - dy) / 4));
- 		} else if (mouse_buttons != mb_to_send) {
-			mouse_buttons = mb_to_send;
-			usb_mouse_move(0, 0, 0);		
-		}
-		if (autorepeat_counter) {
-			if (--autorepeat_counter == 0) {
-				autorepeat_counter = delay_since_released;
-				usb_keyboard_press(autorepeat_key);
-			}
-		} else if (delay_since_released < 0xffff)
-			delay_since_released++;
-	}
 }
 
-void reflash(void) {
-	cli();
-	// disable watchdog, if enabled
-	// disable all peripherals
-	UDCON = 1;
-	USBCON = (1<<FRZCLK);  // disable USB
-	UCSR1B = 0;
-	_delay_ms(5);
-#if defined(__AVR_AT90USB162__)                // Teensy 1.0
-    EIMSK = 0; PCICR = 0; SPCR = 0; ACSR = 0; EECR = 0;
-    TIMSK0 = 0; TIMSK1 = 0; UCSR1B = 0;
-    DDRB = 0; DDRC = 0; DDRD = 0;
-    PORTB = 0; PORTC = 0; PORTD = 0;
-    asm volatile("jmp 0x3E00");
-#elif defined(__AVR_ATmega32U4__)              // Teensy 2.0
-    EIMSK = 0; PCICR = 0; SPCR = 0; ACSR = 0; EECR = 0; ADCSRA = 0;
-    TIMSK0 = 0; TIMSK1 = 0; TIMSK3 = 0; TIMSK4 = 0; UCSR1B = 0; TWCR = 0;
-    DDRB = 0; DDRC = 0; DDRD = 0; DDRE = 0; DDRF = 0; TWCR = 0;
-    PORTB = 0; PORTC = 0; PORTD = 0; PORTE = 0; PORTF = 0;
-    asm volatile("jmp 0x7E00");
-#elif defined(__AVR_AT90USB646__)              // Teensy++ 1.0
-    EIMSK = 0; PCICR = 0; SPCR = 0; ACSR = 0; EECR = 0; ADCSRA = 0;
-    TIMSK0 = 0; TIMSK1 = 0; TIMSK2 = 0; TIMSK3 = 0; UCSR1B = 0; TWCR = 0;
-    DDRA = 0; DDRB = 0; DDRC = 0; DDRD = 0; DDRE = 0; DDRF = 0;
-    PORTA = 0; PORTB = 0; PORTC = 0; PORTD = 0; PORTE = 0; PORTF = 0;
-    asm volatile("jmp 0xFC00");
-#elif defined(__AVR_AT90USB1286__)             // Teensy++ 2.0
-    EIMSK = 0; PCICR = 0; SPCR = 0; ACSR = 0; EECR = 0; ADCSRA = 0;
-    TIMSK0 = 0; TIMSK1 = 0; TIMSK2 = 0; TIMSK3 = 0; UCSR1B = 0; TWCR = 0;
-    DDRA = 0; DDRB = 0; DDRC = 0; DDRD = 0; DDRE = 0; DDRF = 0;
-    PORTA = 0; PORTB = 0; PORTC = 0; PORTD = 0; PORTE = 0; PORTF = 0;
-    asm volatile("jmp 0x1FC00");
-#endif 
+void loop(void) {
+	sword dx;
+	sword dy;
+	PORTB = ~1;
+	scanRow(0);
+	PORTB = ~2;
+	scanRow(16);
+	PORTB = ~4;
+	scanRow(32);
+	if (shifts_to_send != keyboard_modifier_keys) {
+		keyboard_modifier_keys = shifts_to_send;
+		usb_keyboard_press(0);
+	}
+	adns_motion(&dx, &dy);
+	if (dx | dy) {
+		mouse_buttons = mb_to_send;
+		if ((game_mode && !game_wheel) || keys[32+5].prev_state == 0) {
+			keys[32+5].ignore_release = true;
+			usb_mouse_move(clamp_to_sbyte(-dx), clamp_to_sbyte(dy), 0);
+		} else
+			usb_mouse_move(0, 0, clamp_to_sbyte((dx - dy)/4));
+	} else if (mouse_buttons != mb_to_send) {
+		mouse_buttons = mb_to_send;
+		usb_mouse_move(0, 0, 0);		
+	}
+	if (autorepeat_counter) {
+		if (--autorepeat_counter == 0) {
+			autorepeat_counter = delay_since_released;
+			byte key = get_key_code(pressed_count-1, pressed_keys[pressed_count-1]);
+			keyboard_modifier_keys = shifts_to_send;
+			usb_keyboard_press(key);
+		}
+	} else if (delay_since_released < 0xffff)
+		delay_since_released++;
 }

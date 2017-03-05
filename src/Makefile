@@ -49,7 +49,8 @@ SRC =	$(TARGET).c \
 	usb_keyboard_mouse_debug.c \
 	print.c \
 	adns9800_firmware.c \
-	adns9800.c
+	adns9800.c \
+	platform.c
 
 # MCU name, you MUST set this to match the board you are using
 # type "make clean" after changing this, so all files will be rebuilt
