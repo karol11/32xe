@@ -489,7 +489,7 @@ int8_t usb_keyboard_press(uint8_t key)
 	int8_t r;
 	keyboard_keys[0] = key;
 	r = usb_keyboard_send();
-	if (r) return r;
+	if (r || key == 0) return r;
 	keyboard_keys[0] = 0;
 	return usb_keyboard_send();
 }

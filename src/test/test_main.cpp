@@ -209,11 +209,11 @@ namespace {
 	sword next_dy;
 	bool has_errors = false;
 
-	void test(const string &name) {
+	void test(const string &name, Switch *at_start = NULL) {
 		memset(grid, 0, sizeof(grid));
-		acc.clear();
-		acc.str(std::string());
 		acc << name << ":";
+		if (at_start)
+			grid[at_start->pin][at_start->row] |= 1 << at_start->bit;
 		init();
 		loop_step();
 		loop_step();
@@ -223,6 +223,9 @@ namespace {
 
 	void check(const char *expected) {
 		string s = acc.str();
+		s = s.substr(0, s.length() -1);
+		acc.clear();
+		acc.str(std::string());
 		if (s == expected)
 			return;
 		printf("fail %s, expected %s\n", s.c_str(), expected);
@@ -258,9 +261,18 @@ namespace {
 		off(s);
 		check(expected);
 	}
+
+	void test_numpad_press(Switch &s, const char *expected) {
+		test(string("numpad") + s.name);
+		on(T::SPACE); on(T::ENTER);
+		on(s);
+		off(s);
+		off(T::ENTER); off(T::SPACE);
+		check(expected);
+	}
 	
 	void test_ABab(Switch &a, Switch &b, const char *expected) {
-		test(string("pr") + a.name + "+pr" + b.name + "+rel" + a.name + "+rel" + b.name);
+		test(string("+") + a.name + "+" + b.name + "-" + a.name + "-" + b.name);
 		on(a);
 		on(b);
 		off(a);
@@ -269,19 +281,285 @@ namespace {
 	}
 
 	void test_ABba(Switch &a, Switch &b, const char *expected) {
-		test(string("pr") + a.name + "+pr" + b.name + "+rel" + b.name + "+rel" + a.name);
+		test(string("+") + a.name + "+" + b.name + "-" + b.name + "-" + a.name);
 		on(a);
 		on(b);
 		off(b);
 		off(a);
 		check(expected);
 	}
+
+	void test_main_plane(){
+		// single press on each row and column
+		test_single_press(T::Q, "singleQ:(KEY_Q) ()");
+		test_single_press(T::S, "singleS:(KEY_S) ()");
+		test_single_press(T::C, "singleC:(KEY_C) ()");
+		test_single_press(T::F, "singleF:(KEY_F) ()");
+		test_single_press(T::G, "singleG:(KEY_G) ()");
+		test_single_press(T::N, "singleN:(KEY_N) ()");
+		test_single_press(T::U, "singleU:(KEY_U) ()");
+		test_single_press(T::K, "singleK:(KEY_K) ()");
+		test_single_press(T::PERIOD, "singlePERIOD:(KEY_PERIOD) ()");
+		test_single_press(T::P, "singleP:(KEY_P) ()");
+		test_single_press(T::SPACE, "singleSPACE:(KEY_SPACE) ()");
+		test_single_press(T::ENTER, "singleENTER:(KEY_ENTER) ()");
+
+		// pair of non-intersecting presses on left+left, right+right, left-right crossing, and with thums
+		test_ABab(T::Q, T::W, "+Q+W-Q-W:(KEY_Q) () (KEY_W) ()");
+		test_ABab(T::O, T::P, "+O+P-O-P:(KEY_O) () (KEY_P) ()");
+		test_ABab(T::F, T::J, "+F+J-F-J:(KEY_F) () (KEY_J) ()");
+		test_ABab(T::J, T::F, "+J+F-J-F:(KEY_J) () (KEY_F) ()");
+		test_ABab(T::W, T::SPACE, "+W+SPACE-W-SPACE:(KEY_W) () (KEY_SPACE) ()");
+		test_ABab(T::K, T::SPACE, "+K+SPACE-K-SPACE:(KEY_K) () (KEY_SPACE) ()");
+		test_ABab(T::SPACE, T::W, "+SPACE+W-SPACE-W:(KEY_SPACE) () (KEY_W) ()");
+		test_ABab(T::SPACE, T::SLASH, "+SPACE+SLASH-SPACE-SLASH:(KEY_SPACE) () (KEY_SLASH) ()");
+		test_ABab(T::W, T::ENTER, "+W+ENTER-W-ENTER:(KEY_W) () (KEY_ENTER) ()");
+		test_ABab(T::K, T::ENTER, "+K+ENTER-K-ENTER:(KEY_K) () (KEY_ENTER) ()");
+		test_ABab(T::ENTER, T::W, "+ENTER+W-ENTER-W:(KEY_ENTER) () (KEY_W) ()");
+		test_ABab(T::ENTER, T::SLASH, "+ENTER+SLASH-ENTER-SLASH:(KEY_ENTER) () (KEY_SLASH) ()");
+		test_ABab(T::ENTER, T::SPACE, "+ENTER+SPACE-ENTER-SPACE:(KEY_ENTER) () (KEY_SPACE) ()");
+		test_ABab(T::SPACE, T::ENTER, "+SPACE+ENTER-SPACE-ENTER:(KEY_SPACE) () (KEY_ENTER) ()");
+
+		// intersecting pairs as shifts
+		test_ABba(T::A, T::P, "+A+P-P-A:(LEFT_SHIFT KEY_P) (LEFT_SHIFT) ()");
+		test_ABba(T::S, T::COLON, "+S+COLON-COLON-S:(LEFT_GUI KEY_SEMICOLON) (LEFT_GUI) ()");
+		test_ABba(T::D, T::COMMA, "+D+COMMA-COMMA-D:(LEFT_ALT KEY_COMMA) (LEFT_ALT) ()");
+		test_ABba(T::F, T::SLASH, "+F+SLASH-SLASH-F:(LEFT_CTRL KEY_SLASH) (LEFT_CTRL) ()");
+		test_ABba(T::Z, T::Y, "+Z+Y-Y-Z:(RIGHT_CTRL KEY_Y) (RIGHT_CTRL) ()");
+		test_ABba(T::X, T::H, "+X+H-H-X:(RIGHT_GUI KEY_H) (RIGHT_GUI) ()");
+		test_ABba(T::C, T::N, "+C+N-N-C:(RIGHT_ALT KEY_N) (RIGHT_ALT) ()");
+		test_ABba(T::V, T::ENTER, "+V+ENTER-ENTER-V:(RIGHT_SHIFT KEY_ENTER) (RIGHT_SHIFT) ()");
+		test_ABba(T::J, T::Q, "+J+Q-Q-J:(LEFT_CTRL KEY_Q) (LEFT_CTRL) ()");
+		test_ABba(T::K, T::A, "+K+A-A-K:(LEFT_ALT KEY_A) (LEFT_ALT) ()");
+		test_ABba(T::L, T::Z, "+L+Z-Z-L:(LEFT_GUI KEY_Z) (LEFT_GUI) ()");
+		test_ABba(T::COLON, T::SPACE, "+COLON+SPACE-SPACE-COLON:(LEFT_SHIFT KEY_SPACE) (LEFT_SHIFT) ()");
+		test_ABba(T::SLASH, T::T, "+SLASH+T-T-SLASH:(RIGHT_CTRL KEY_T) (RIGHT_CTRL) ()");
+		test_ABba(T::PERIOD, T::G, "+PERIOD+G-G-PERIOD:(RIGHT_GUI KEY_G) (RIGHT_GUI) ()");
+		test_ABba(T::COMMA, T::B, "+COMMA+B-B-COMMA:(RIGHT_ALT KEY_B) (RIGHT_ALT) ()");
+		test_ABba(T::M, T::D, "+M+D-D-M:(RIGHT_SHIFT KEY_D) (RIGHT_SHIFT) ()");
+
+		// shifts alone
+		test_ABba(T::A, T::SPACE, "+A+SPACE-SPACE-A:(LEFT_SHIFT) ()");
+		test("shifts alone");
+		on(T::COLON); on(T::K); on(T::ENTER);
+		off(T::ENTER); off(T::K); off(T::COLON);
+		check("shifts alone:(LEFT_SHIFT LEFT_ALT) (LEFT_SHIFT) ()");
+	}
+
+	void test_side_planes() {
+		// arrows
+		test_ABba(T::ENTER, T::Y, "+ENTER+Y-Y-ENTER:(KEY_HOME) ()");
+		test_ABba(T::ENTER, T::H, "+ENTER+H-H-ENTER:(KEY_END) ()");
+		test_ABba(T::ENTER, T::N, "+ENTER+N-N-ENTER:(KEY_INSERT) ()");
+		test_ABba(T::ENTER, T::U, "+ENTER+U-U-ENTER:(KEY_PAGE_UP) ()");
+		test_ABba(T::ENTER, T::J, "+ENTER+J-J-ENTER:(KEY_LEFT) ()");
+		test_ABba(T::ENTER, T::M, "+ENTER+M-M-ENTER:(KEY_DELETE) ()");
+		test_ABba(T::ENTER, T::I, "+ENTER+I-I-ENTER:(KEY_UP) ()");
+		test_ABba(T::ENTER, T::K, "+ENTER+K-K-ENTER:(KEY_DOWN) ()");
+		test_ABba(T::ENTER, T::COMMA, "+ENTER+COMMA-COMMA-ENTER:(KEY_LEFT_BRACE) ()");
+		test_ABba(T::ENTER, T::O, "+ENTER+O-O-ENTER:(KEY_PAGE_DOWN) ()");
+		test_ABba(T::ENTER, T::L, "+ENTER+L-L-ENTER:(KEY_RIGHT) ()");
+		test_ABba(T::ENTER, T::PERIOD, "+ENTER+PERIOD-PERIOD-ENTER:(KEY_RIGHT_BRACE) ()");
+		test_ABba(T::ENTER, T::P, "+ENTER+P-P-ENTER:(KEY_BACKSPACE) ()");
+		test_ABba(T::ENTER, T::COLON, "+ENTER+COLON-COLON-ENTER:(KEY_QUOTE) ()");
+		test_ABba(T::ENTER, T::SLASH, "+ENTER+SLASH-SLASH-ENTER:(KEY_BACKSLASH) ()");
+		test_ABba(T::ENTER, T::SPACE, "+ENTER+SPACE-SPACE-ENTER:(KEY_MENU) ()");
+
+		test("shift+ctrl+arrows");
+		on(T::A); on(T::F); on(T::ENTER);
+		on(T::K); off(T::K);
+		on(T::L); off(T::L);
+		on(T::L); off(T::L);
+		on(T::K); on(T::L);
+		off(T::K); off(T::L);
+		off(T::A); off(T::F); off(T::ENTER);
+		check("shift+ctrl+arrows:"
+			"(LEFT_CTRL LEFT_SHIFT KEY_DOWN) (LEFT_CTRL LEFT_SHIFT) "
+			"(LEFT_CTRL LEFT_SHIFT KEY_RIGHT) (LEFT_CTRL LEFT_SHIFT) "
+			"(LEFT_CTRL LEFT_SHIFT KEY_RIGHT) (LEFT_CTRL LEFT_SHIFT) "
+			"(LEFT_CTRL LEFT_SHIFT KEY_DOWN) (LEFT_CTRL LEFT_SHIFT) "
+			"(LEFT_CTRL LEFT_SHIFT KEY_RIGHT) (LEFT_CTRL LEFT_SHIFT) (LEFT_CTRL) ()");
+
+		test_ABba(T::ENTER, T::Q, "+ENTER+Q-Q-ENTER:(KEY_NUM_LOCK) ()");
+		test_ABba(T::ENTER, T::A, "+ENTER+A-A-ENTER:(KEY_CAPS_LOCK) ()");
+		test_ABba(T::ENTER, T::Z, "+ENTER+Z-Z-ENTER:(KEY_SCROLL_LOCK) ()");
+		test_ABba(T::ENTER, T::X, "+ENTER+X-X-ENTER:(KEY_F1) ()");
+		test_ABba(T::ENTER, T::C, "+ENTER+C-C-ENTER:(KEY_F2) ()");
+		test_ABba(T::ENTER, T::V, "+ENTER+V-V-ENTER:(KEY_F3) ()");
+		test_ABba(T::ENTER, T::S, "+ENTER+S-S-ENTER:(KEY_F4) ()");
+		test_ABba(T::ENTER, T::D, "+ENTER+D-D-ENTER:(KEY_F5) ()");
+		test_ABba(T::ENTER, T::F, "+ENTER+F-F-ENTER:(KEY_F6) ()");
+		test_ABba(T::ENTER, T::W, "+ENTER+W-W-ENTER:(KEY_F7) ()");
+		test_ABba(T::ENTER, T::E, "+ENTER+E-E-ENTER:(KEY_F8) ()");
+		test_ABba(T::ENTER, T::R, "+ENTER+R-R-ENTER:(KEY_F9) ()");
+		test_ABba(T::ENTER, T::T, "+ENTER+T-T-ENTER:(KEY_F10) ()");
+		test_ABba(T::ENTER, T::G, "+ENTER+G-G-ENTER:(KEY_F11) ()");
+		test_ABba(T::ENTER, T::B, "+ENTER+B-B-ENTER:(KEY_F12) ()");
+
+		// numbers
+		test_ABba(T::SPACE, T::Q, "+SPACE+Q-Q-SPACE:(KEY_ESC) ()");
+		test_ABba(T::SPACE, T::A, "+SPACE+A-A-SPACE:(KEY_TAB) ()");
+		test_ABba(T::SPACE, T::Z, "+SPACE+Z-Z-SPACE:(KEY_TILDE) ()");
+		test_ABba(T::SPACE, T::X, "+SPACE+X-X-SPACE:(KEY_1) ()");
+		test_ABba(T::SPACE, T::C, "+SPACE+C-C-SPACE:(KEY_2) ()");
+		test_ABba(T::SPACE, T::V, "+SPACE+V-V-SPACE:(KEY_3) ()");
+		test_ABba(T::SPACE, T::S, "+SPACE+S-S-SPACE:(KEY_4) ()");
+		test_ABba(T::SPACE, T::D, "+SPACE+D-D-SPACE:(KEY_5) ()");
+		test_ABba(T::SPACE, T::F, "+SPACE+F-F-SPACE:(KEY_6) ()");
+		test_ABba(T::SPACE, T::W, "+SPACE+W-W-SPACE:(KEY_7) ()");
+		test_ABba(T::SPACE, T::E, "+SPACE+E-E-SPACE:(KEY_8) ()");
+		test_ABba(T::SPACE, T::R, "+SPACE+R-R-SPACE:(KEY_9) ()");
+		test_ABba(T::SPACE, T::T, "+SPACE+T-T-SPACE:(KEY_0) ()");
+		test_ABba(T::SPACE, T::G, "+SPACE+G-G-SPACE:(KEY_EQUAL) ()");
+		test_ABba(T::SPACE, T::B, "+SPACE+B-B-SPACE:(KEY_MINUS) ()");
+		test("ctrl+! ()");
+		on(T::SPACE); on(T::COLON); on(T::J);
+		on(T::X); off(T::X);
+		off(T::SPACE); off(T::J); on(T::SPACE);
+		on(T::R); on(T::T); off(T::R); off(T::T);
+		off(T::SPACE); off(T::COLON);
+		check("ctrl+! ():"
+			"(LEFT_CTRL LEFT_SHIFT KEY_1) (LEFT_CTRL LEFT_SHIFT) (LEFT_SHIFT) "
+			"(LEFT_SHIFT KEY_9) (LEFT_SHIFT) "
+			"(LEFT_SHIFT KEY_0) (LEFT_SHIFT) ()");
+		//test_ABba(T::SPACE, T::ENTER, ""); unassigned
+		test_ABba(T::SPACE, T::P, "+SPACE+P-P-SPACE:(KEY_BACKSPACE) ()");
+		test_ABba(T::SPACE, T::COLON, "+SPACE+COLON-COLON-SPACE:(KEY_QUOTE) ()");
+		test_ABba(T::SPACE, T::Y, "+SPACE+Y-Y-SPACE:(KEY_PRINTSCREEN) ()");
+		test_ABba(T::SPACE, T::H, "+SPACE+H-H-SPACE:(KEY_PAUSE) ()");
+	}
+
+	void test_numpad_plane() {
+		test_numpad_press(T::Q, "numpadQ:(KEY_ESC) ()");
+		test_numpad_press(T::A, "numpadA:(KEY_TAB) ()");
+		test_numpad_press(T::Z, "numpadZ:(KEY_TILDE) ()");
+		test_numpad_press(T::X, "numpadX:(LEFT_SHIFT KEY_1) (LEFT_SHIFT)");
+		test_numpad_press(T::C, "numpadC:(LEFT_SHIFT KEY_2) (LEFT_SHIFT)");
+		test_numpad_press(T::V, "numpadV:(LEFT_SHIFT KEY_3) (LEFT_SHIFT)");
+		test_numpad_press(T::S, "numpadS:(LEFT_SHIFT KEY_4) (LEFT_SHIFT)");
+		test_numpad_press(T::D, "numpadD:(LEFT_SHIFT KEY_5) (LEFT_SHIFT)");
+		test_numpad_press(T::F, "numpadF:(LEFT_SHIFT KEY_6) (LEFT_SHIFT)");
+		test_numpad_press(T::W, "numpadW:(LEFT_SHIFT KEY_7) (LEFT_SHIFT)");
+		test_numpad_press(T::E, "numpadE:(LEFT_SHIFT KEY_8) (LEFT_SHIFT)");
+		test_numpad_press(T::R, "numpadR:(LEFT_SHIFT KEY_9) (LEFT_SHIFT)");
+		test_numpad_press(T::T, "numpadT:(LEFT_SHIFT KEY_0) (LEFT_SHIFT)");
+		test_numpad_press(T::G, "numpadG:(KEY_EQUAL) ()");
+		test_numpad_press(T::B, "numpadB:(KEY_MINUS) ()");
+
+		test_numpad_press(T::Y, "numpadY:(KEYPAD_ASTERIX) ()");
+		test_numpad_press(T::H, "numpadH:(KEYPAD_PLUS) ()");
+		test_numpad_press(T::N, "numpadN:(KEYPAD_0) ()");
+		test_numpad_press(T::M, "numpadM:(KEYPAD_1) ()");
+		test_numpad_press(T::COMMA, "numpadCOMMA:(KEYPAD_2) ()");
+		test_numpad_press(T::PERIOD, "numpadPERIOD:(KEYPAD_3) ()");
+		test_numpad_press(T::J, "numpadJ:(KEYPAD_4) ()");
+		test_numpad_press(T::K, "numpadK:(KEYPAD_5) ()");
+		test_numpad_press(T::L, "numpadL:(KEYPAD_6) ()");
+		test_numpad_press(T::U, "numpadU:(KEYPAD_7) ()");
+		test_numpad_press(T::I, "numpadI:(KEYPAD_8) ()");
+		test_numpad_press(T::O, "numpadO:(KEYPAD_9) ()");
+		test_numpad_press(T::P, "numpadP:(KEYPAD_SLASH) ()");
+		test_numpad_press(T::COLON, "numpadCOLON:(KEYPAD_MINUS) ()");
+		test_numpad_press(T::SLASH, "numpadSLASH:(KEYPAD_PERIOD) ()");
+
+		test("numeric sequence");
+		on(T::SPACE); on(T::ENTER);
+		on(T::Q); off(T::Q);
+		on(T::X); off(T::X);
+		on(T::D); on(T::R);
+		off(T::D); off(T::R);
+		on(T::G); off(T::G);
+		off(T::SPACE); off(T::ENTER);
+		check("numeric sequence:(KEY_ESC) () (LEFT_SHIFT KEY_1) (LEFT_SHIFT) (LEFT_SHIFT KEY_5) (LEFT_SHIFT) "
+			"(LEFT_SHIFT KEY_9) (LEFT_SHIFT) (KEY_EQUAL) ()");
+	}
+	void test_mouse() {
+		test("wheel");
+		move(10, 0);
+		check("wheel:[0 0 5]");
+
+		test("ctrl+shift+wheel");
+		on(T::A);
+		on(T::F);
+		move(10, 0);
+		off(T::A);
+		off(T::F);
+		check("ctrl+shift+wheel:(LEFT_CTRL LEFT_SHIFT) [0 0 5] (LEFT_CTRL) ()");
+
+		test("mouse move");
+		on(T::SPACE);
+		move(10, -10);
+		off(T::SPACE);
+		check("mouse move:[-10 -10 0]");
+
+		test("ctrl+mouse move");
+		on(T::SPACE); on(T::F);
+		move(10, -10);
+		off(T::SPACE); off(T::F);
+		check("ctrl+mouse move:(LEFT_CTRL) [-10 -10 0] ()");
+
+		test("click-lb");
+		on(T::SPACE); on(T::U);
+		off(T::U); off(T::SPACE);
+		check("click-lb:[L0 0 0] [0 0 0]");
+
+		test("click-lb-reversed");
+		on(T::SPACE); on(T::U);
+		off(T::SPACE); off(T::U); 
+		check("click-lb-reversed:[L0 0 0] [0 0 0]");
+
+		test("drag-rb-with-shift");
+		on(T::SPACE); move(10, -10);
+		on(T::I); move(11, 11);
+		on(T::A); move(-12, 12);
+		off(T::A); move(-13, -13);
+		off(T::I); move(14, 14);
+		off(T::SPACE);
+		check("drag-rb-with-shift:"
+			"[-10 -10 0] [R0 0 0] [R-11 11 0] "
+			"(LEFT_SHIFT) [R12 12 0] () [R13 -13 0] "
+			"[0 0 0] [-14 14 0]");
+
+		test("drag-rb-with-shift-reverse");
+		on(T::SPACE);
+		on(T::I); move(11, 11);
+		on(T::A); move(-12, 12);
+		off(T::SPACE);
+		off(T::A); move(-13, -13);
+		off(T::I); move(14, 14);
+		check("drag-rb-with-shift-reverse:[R0 0 0] [R-11 11 0] (LEFT_SHIFT) [R12 12 0] () [0 0 0]");
+	}
+
+	void test_autorepeat() {
+		test("autorepeat");
+		on(T::Q); off(T::Q);
+		on(T::Q); loop_step(); loop_step(); loop_step(); off(T::Q);
+		check("autorepeat:(KEY_Q) () (KEY_Q) () (KEY_Q) ()");
+
+		test("shift+autorepeat");
+		on(T::COLON);
+		on(T::Q); off(T::Q);
+		on(T::Q); loop_step(); loop_step(); loop_step(); off(T::Q);
+		off(T::COLON);
+		check("shift+autorepeat:(LEFT_SHIFT KEY_Q) (LEFT_SHIFT) (LEFT_SHIFT KEY_Q) (LEFT_SHIFT) (LEFT_SHIFT KEY_Q) (LEFT_SHIFT) ()");
+
+		test("unshift during autorepeat");
+		on(T::COLON);
+		on(T::Q); off(T::Q);
+		on(T::Q); loop_step(); loop_step();
+		off(T::COLON);
+		loop_step(); loop_step(); loop_step(); off(T::Q);
+		check("unshift during autorepeat:(LEFT_SHIFT KEY_Q) (LEFT_SHIFT) (LEFT_SHIFT KEY_Q) (LEFT_SHIFT) () (KEY_Q) () (KEY_Q) ()");
+	}
 };
 
 sbyte __cdecl usb_keyboard_press(byte key) {
 	keyboard_keys[0] = key;
 	usb_keyboard_send();
-	keyboard_keys[0] = 0;
+	if (key) {
+		keyboard_keys[0] = 0;
+		usb_keyboard_send();
+	}
 	return 1;
 }
 sbyte __cdecl usb_keyboard_send(void) {
@@ -313,7 +591,7 @@ sbyte __cdecl usb_mouse_move(sbyte dx, sbyte dy, sbyte wheel) {
 		acc << "M";
 	if (mouse_buttons & 4)
 		acc << "R";
-	acc << dx << " " << dy << " " << wheel << "] ";
+	acc << int(dx) << " " << int(dy) << " " << int(wheel) << "] ";
 	return 1;
 }
 
@@ -324,106 +602,28 @@ void __cdecl adns_motion(sword *dx,sword *dy) {
 }
 
 int main() {
-	// single press on each row and column
-	test_single_press(T::Q, "singleQ:(KEY_Q) ");
-	test_single_press(T::S, "singleS:(KEY_S) ");
-	test_single_press(T::C, "singleC:(KEY_C) ");
-	test_single_press(T::F, "singleF:(KEY_F) ");
-	test_single_press(T::G, "singleG:(KEY_G) ");
-	test_single_press(T::N, "singleN:(KEY_N) ");
-	test_single_press(T::U, "singleU:(KEY_U) ");
-	test_single_press(T::K, "singleK:(KEY_K) ");
-	test_single_press(T::PERIOD, "singlePERIOD:(KEY_PERIOD) ");
-	test_single_press(T::P, "singleP:(KEY_P) ");
-	test_single_press(T::SPACE, "singleSPACE:(KEY_SPACE) ");
-	test_single_press(T::ENTER, "singleENTER:(KEY_ENTER) ");
+	test("reflash", &T::Q);
+	check("reflash:reflash");
 
-	// pair of non-intersecting presses on left+left, right+right, left-right crossing, and with thums
-	test_ABab(T::Q, T::W, "prQ+prW+relQ+relW:(KEY_Q) (KEY_W) ");
-	test_ABab(T::O, T::P, "prO+prP+relO+relP:(KEY_O) (KEY_P) ");
-	test_ABab(T::F, T::J, "prF+prJ+relF+relJ:(KEY_F) (KEY_J) ");
-	test_ABab(T::J, T::F, "prJ+prF+relJ+relF:(KEY_J) (KEY_F) ");
-	test_ABab(T::W, T::SPACE, "prW+prSPACE+relW+relSPACE:(KEY_W) (KEY_SPACE) ");
-	test_ABab(T::K, T::SPACE, "prK+prSPACE+relK+relSPACE:(KEY_K) (KEY_SPACE) ");
-	test_ABab(T::SPACE, T::W, "prSPACE+prW+relSPACE+relW:(KEY_SPACE) (KEY_W) ");
-	test_ABab(T::SPACE, T::SLASH, "prSPACE+prSLASH+relSPACE+relSLASH:(KEY_SPACE) (KEY_SLASH) ");
-	test_ABab(T::W, T::ENTER, "prW+prENTER+relW+relENTER:(KEY_W) (KEY_ENTER) ");
-	test_ABab(T::K, T::ENTER, "prK+prENTER+relK+relENTER:(KEY_K) (KEY_ENTER) ");
-	test_ABab(T::ENTER, T::W, "prENTER+prW+relENTER+relW:(KEY_ENTER) (KEY_W) ");
-	test_ABab(T::ENTER, T::SLASH, "prENTER+prSLASH+relENTER+relSLASH:(KEY_ENTER) (KEY_SLASH) ");
-	test_ABab(T::ENTER, T::SPACE, "prENTER+prSPACE+relENTER+relSPACE:(KEY_ENTER) (KEY_SPACE) ");
-	test_ABab(T::SPACE, T::ENTER, "prSPACE+prENTER+relSPACE+relENTER:(KEY_SPACE) (KEY_ENTER) ");
+	test_main_plane();
+	test_side_planes();
+	test_numpad_plane();
+	test_mouse();
+	test_autorepeat();
 
-	// intersecting pairs as shifts
-	test_ABba(T::A, T::P, "prA+prP+relP+relA:(LEFT_SHIFT KEY_P) () ");
-	test_ABba(T::S, T::COLON, "prS+prCOLON+relCOLON+relS:(LEFT_GUI KEY_SEMICOLON) () ");
-	test_ABba(T::D, T::COMMA, "prD+prCOMMA+relCOMMA+relD:(LEFT_ALT KEY_COMMA) () ");
-	test_ABba(T::F, T::SLASH, "prF+prSLASH+relSLASH+relF:(LEFT_CTRL KEY_SLASH) () ");
-	test_ABba(T::Z, T::Y, "prZ+prY+relY+relZ:(RIGHT_CTRL KEY_Y) () ");
-	test_ABba(T::X, T::H, "prX+prH+relH+relX:(RIGHT_GUI KEY_H) () ");
-	test_ABba(T::C, T::N, "prC+prN+relN+relC:(RIGHT_ALT KEY_N) () ");
-	test_ABba(T::V, T::ENTER, "prV+prENTER+relENTER+relV:(RIGHT_SHIFT KEY_ENTER) () ");
-	test_ABba(T::J, T::Q, "prJ+prQ+relQ+relJ:(LEFT_CTRL KEY_Q) () ");
-	test_ABba(T::K, T::A, "prK+prA+relA+relK:(LEFT_ALT KEY_A) () ");
-	test_ABba(T::L, T::Z, "prL+prZ+relZ+relL:(LEFT_GUI KEY_Z) () ");
-	test_ABba(T::COLON, T::SPACE, "prCOLON+prSPACE+relSPACE+relCOLON:(LEFT_SHIFT KEY_SPACE) () ");
-	test_ABba(T::SLASH, T::T, "prSLASH+prT+relT+relSLASH:(RIGHT_CTRL KEY_T) () ");
-	test_ABba(T::PERIOD, T::G, "prPERIOD+prG+relG+relPERIOD:(RIGHT_GUI KEY_G) () ");
-	test_ABba(T::COMMA, T::B, "prCOMMA+prB+relB+relCOMMA:(RIGHT_ALT KEY_B) () ");
-	test_ABba(T::M, T::D, "prM+prD+relD+relM:(RIGHT_SHIFT KEY_D) () ");
+	test("game mode");
+	on(T::SPACE); on(T::SLASH);
+	off(T::SLASH); off(T::SPACE);
+	on(T::E);
+	on(T::F);
+	on(T::SPACE);
+	move(10, 20);
+	off(T::SPACE);
+	off(T::E);
+	off(T::F);
+	check("");
 
-	// arrows
-	test_ABba(T::ENTER, T::Y, "prENTER+prY+relY+relENTER:(KEY_HOME) ");
-	test_ABba(T::ENTER, T::H, "prENTER+prH+relH+relENTER:(KEY_END) ");
-	test_ABba(T::ENTER, T::N, "prENTER+prN+relN+relENTER:(KEY_INSERT) ");
-	test_ABba(T::ENTER, T::U, "prENTER+prU+relU+relENTER:(KEY_PAGE_UP) ");
-	test_ABba(T::ENTER, T::J, "prENTER+prJ+relJ+relENTER:(KEY_LEFT) ");
-	test_ABba(T::ENTER, T::M, "prENTER+prM+relM+relENTER:(KEY_DELETE) ");
-	test_ABba(T::ENTER, T::I, "prENTER+prI+relI+relENTER:(KEY_UP) ");
-	test_ABba(T::ENTER, T::K, "prENTER+prK+relK+relENTER:(KEY_DOWN) ");
-	test_ABba(T::ENTER, T::COMMA, "prENTER+prCOMMA+relCOMMA+relENTER:(KEY_LEFT_BRACE) ");
-	test_ABba(T::ENTER, T::O, "prENTER+prO+relO+relENTER:(KEY_PAGE_DOWN) ");
-	test_ABba(T::ENTER, T::L, "prENTER+prL+relL+relENTER:(KEY_RIGHT) ");
-	test_ABba(T::ENTER, T::PERIOD, "prENTER+prPERIOD+relPERIOD+relENTER:(KEY_RIGHT_BRACE) ");
-	test_ABba(T::ENTER, T::P, "prENTER+prP+relP+relENTER:(KEY_BACKSPACE) ");
-	test_ABba(T::ENTER, T::COLON, "prENTER+prCOLON+relCOLON+relENTER:(KEY_QUOTE) ");
-	test_ABba(T::ENTER, T::SLASH, "prENTER+prSLASH+relSLASH+relENTER:(KEY_BACKSLASH) ");
-
-	test("shift+ctrl+arrows");
-	on(T::A); on(T::F); on(T::ENTER);
-	on(T::K); off(T::K);
-	on(T::L); off(T::L);
-	on(T::L); off(T::L);
-	on(T::K); on(T::L);
-	off(T::K); off(T::L);
-	off(T::A); off(T::F); off(T::ENTER);
-	check("shift+ctrl+arrows:(LEFT_CTRL LEFT_SHIFT KEY_DOWN) (LEFT_CTRL LEFT_SHIFT KEY_RIGHT) (LEFT_CTRL LEFT_SHIFT KEY_RIGHT) "
-		"(LEFT_CTRL LEFT_SHIFT KEY_DOWN) (LEFT_CTRL LEFT_SHIFT KEY_RIGHT) (LEFT_CTRL) () ");
-
-	test_ABba(T::ENTER, T::Q, "prENTER+prQ+relQ+relENTER:(KEY_NUM_LOCK) ");
-	test_ABba(T::ENTER, T::W, "prENTER+prW+relW+relENTER:(KEY_F7) ");
-	test_ABba(T::ENTER, T::E, "prENTER+prE+relE+relENTER:(KEY_F8) ");
-	test_ABba(T::ENTER, T::R, "prENTER+prR+relR+relENTER:(KEY_F9) ");
-	test_ABba(T::ENTER, T::T, "prENTER+prT+relT+relENTER:(KEY_F10) ");
-	test_ABba(T::ENTER, T::A, "prENTER+prA+relA+relENTER:(KEY_CAPS_LOCK) ");
-	test_ABba(T::ENTER, T::S, "prENTER+prS+relS+relENTER:(KEY_F4) ");
-	test_ABba(T::ENTER, T::D, "prENTER+prD+relD+relENTER:(KEY_F5) ");
-	test_ABba(T::ENTER, T::F, "prENTER+prF+relF+relENTER:(KEY_F6) ");
-	test_ABba(T::ENTER, T::G, "prENTER+prG+relG+relENTER:(KEY_F11) ");
-	test_ABba(T::ENTER, T::Z, "prENTER+prZ+relZ+relENTER:(KEY_SCROLL_LOCK) ");
-	test_ABba(T::ENTER, T::X, "prENTER+prX+relX+relENTER:(KEY_F1) ");
-	test_ABba(T::ENTER, T::C, "prENTER+prC+relC+relENTER:(KEY_F2) ");
-	test_ABba(T::ENTER, T::V, "prENTER+prV+relV+relENTER:(KEY_F3) ");
-	test_ABba(T::ENTER, T::B, "prENTER+prB+relB+relENTER:(KEY_F12) ");
-
-	// numbers
-	// mouse clicks
-	// 
-	// numlock plane
-	// wheel and whifts+wheel
-	// shifts alone
-	// game mode
-	// mouse move
+	// game mode test_ABba(T::SPACE, T::SLASH, "");
 
 	printf("%s\n", has_errors ? "failed" : "Ok");
 	return has_errors;
