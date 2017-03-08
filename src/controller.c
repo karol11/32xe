@@ -351,6 +351,6 @@ void loop_step(void) {
 	}
 	if (dx || dy || dwheel || mouse_buttons != mb_to_send) {
 		mouse_buttons = mb_to_send;
-		usb_mouse_move(clamp_to_sbyte(-dx), clamp_to_sbyte(dy), clamp_to_sbyte(dwheel));
+		usb_mouse_move(clamp_to_sbyte(dx), clamp_to_sbyte(-dy), clamp_to_sbyte(dwheel));
 	}
 }
