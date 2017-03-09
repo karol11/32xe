@@ -22,6 +22,10 @@ void reflash(void);
 #define MB_RIGHT 253
 #define MB_WHEEL 254
 
+#ifndef DEBOUNCE_DELAY
+#define DEBOUNCE_DELAY 0x30
+#endif
+
 //
 // --- keymap
 //
@@ -164,7 +168,7 @@ void handleKey(byte index, byte port, byte mask) {
 		return;
 	k->prev_state = port;
 	keys_changed = true;
-	k->bounce_counter = 2;
+	k->bounce_counter = DEBOUNCE_DELAY;
 	if (port == 0) { // pressed
 		if (pressed_count >= 32)
 			pressed_count = 0;
@@ -292,7 +296,6 @@ void init(void) {
 	PORTB = 0xff;
 	pressed_count = 0;
 }
-
 void loop_step(void) {
 	sword dx;
 	sword dy;

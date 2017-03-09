@@ -26,4 +26,8 @@ extern byte mouse_buttons;
 
 byte read_pin(int pin);
 
+void print(char *);
+void phex16(sword);
+void phex(byte);
+
 #endif
