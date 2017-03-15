@@ -134,6 +134,6 @@ void adns_init(void) {
   //adns_com_begin();
 	print("\nADNS id="); phex(adns_read(REG_PRODUCT_ID));
 	print("\nADNS id2="); phex(adns_read(1));
-	adns_write(REG_CONF_1, 10);
+	adns_write(REG_CONF_1, 12);
   adns_com_end();
 }

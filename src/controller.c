@@ -17,10 +17,10 @@ void reflash(void);
 
 #define MB_GAME  250
 
-#define MB_LEFT  251
-#define MB_MID   252
+#define MB_LEFT  252
 #define MB_RIGHT 253
-#define MB_WHEEL 254
+#define MB_MID   254
+#define MB_WHEEL 255
 
 #ifndef DEBOUNCE_DELAY
 #define DEBOUNCE_DELAY 0x30
@@ -50,9 +50,9 @@ const byte PROGMEM numpad_keys[] = {
 };
 
 const byte PROGMEM mouse_keys[] = {
-	0, MB_MID,     MB_RIGHT,   MB_LEFT,  KEY_PRINTSCREEN, 0, 0, 0,
-	0, 0,          0,          0,        KEY_PAUSE,       0, 0, 0,
-	0, MB_GAME      KEY_VOL_DN, KEY_VOL_UP, KEY_MUTE, 0,               0, 0, 0,
+	MB_MID, MB_RIGHT, MB_RIGHT, MB_LEFT, MB_LEFT, MB_LEFT, 0, 0,  MB_MID,  MB_RIGHT,   MB_RIGHT,   MB_LEFT,  MB_LEFT,         MB_LEFT, 0, 0,
+	0,      0,        0,        0,       0,       MB_LEFT, 0, 0,  0,       0,          0,          0,        KEY_PRINTSCREEN, MB_LEFT, 0, 0,
+	0,      0,        0,        0,       0,       MB_LEFT, 0, 0,  MB_GAME, KEY_VOL_DN, KEY_VOL_UP, KEY_MUTE, KEY_PAUSE,       MB_LEFT, 0, 0,
 };
 
 const byte PROGMEM imm_game_mode[] = {
@@ -69,7 +69,8 @@ const byte PROGMEM bottom_shift_keys[] = {
 };
 
 #define RM_PROCESS 0
-#define RM_UNSHIFT 0xff
+#define RM_UNSHIFT 250
+#define RM_MOUSE 249
 
 typedef struct key_info_struct{
 	byte prev_state;
@@ -80,6 +81,7 @@ typedef struct key_info_struct{
 key_info_t keys[16*3];
 byte pressed_keys[32];
 byte pressed_count;
+sword dwheel;
 
 bool game_mode;
 bool game_wheel;
@@ -89,6 +91,7 @@ byte autorepeat_key;
 word delay_since_released;
 word autorepeat_counter;
 bool keys_changed;
+bool mouse_mode;
 
 void drop_pressed_keys(void) {
 	{
@@ -107,26 +110,41 @@ void drop_pressed_keys(void) {
 
 byte to_shift(byte index) {
 	byte row = index & 0x30;
-	if (row == 0x30) return 0;
+	if (row == 0) return 0;
 	return pgm_read_byte((row == 0x20 ? bottom_shift_keys : main_shift_keys) + (index & 7));
 }
 
 sbyte clamp_to_sbyte(sword v) {
-	return (sbyte) v;
-//		v < -128 ? -128 :
-//		v > 127 ? 127 : v;
+	return
+		v < -128 ? -128 :
+		v > 127 ? 127 : v;
 }
 
-byte peek_key_code(sbyte pos, byte index) {
+byte pressed_key_code(sbyte pos, byte index) {
 	if (game_mode)
 		return pgm_read_byte(imm_game_mode + index);
+	if (mouse_mode)
+		return pgm_read_byte(mouse_keys + index);	
 	const byte *plane = basic_keys;
 	while (--pos >= 0) {
 		byte s = pressed_keys[pos];
 		if ((s & 7) == 5)
-			plane = plane != basic_keys ? numpad_keys : (s & 8) ? arrow_keys : numeric_mouse_keys;
+			plane = plane != basic_keys ? numpad_keys : numeric_arrow_keys;
 	}
 	return pgm_read_byte(plane + index);
+}
+
+bool try_mouse_motion(void) {
+	if (mouse_mode)
+		return true;
+	for (byte i = 0; i < pressed_count; i++) {
+		byte s = pressed_keys[i];
+		if (((s & 0x30) == 0 || (s & 7) == 5) && keys[s].release_mode == RM_PROCESS) {
+			keys[s].release_mode = RM_MOUSE;
+			return mouse_mode = true;
+		}
+	}
+	return false;
 }
 
 byte get_key_code(sbyte pos, byte index) {
@@ -138,7 +156,7 @@ byte get_key_code(sbyte pos, byte index) {
 	while (--pos >= 0) {
 		byte s = pressed_keys[pos];
 		if ((s & 7) == 5)
-			plane = plane != basic_keys ? numpad_keys : (s & 8) ? arrow_keys : numeric_mouse_keys;
+			plane = plane != basic_keys ? numpad_keys : numeric_arrow_keys;
 		else if ((s & 8) != (index & 8))
 			shifts_to_send |= to_shift(s);
 		else if ((index & 7) == 5) {
@@ -150,12 +168,11 @@ byte get_key_code(sbyte pos, byte index) {
 		if (keys[s].release_mode == RM_PROCESS)
 			keys[s].release_mode = RM_UNSHIFT;
 	}
+	if (mouse_mode)
+		plane = mouse_keys;
 	if (shifts_alone)
 		return 0;
-	byte key = pgm_read_byte(plane + index);
-	if (plane == numpad_keys && key >= KEY_1 && key <= KEY_0)
-		shifts_to_send ^= KEY_LEFT_SHIFT;
-	return key;
+	return pgm_read_byte(plane + index);
 } 
 
 void handleKey(byte index, byte port, byte mask) {
@@ -175,7 +192,7 @@ void handleKey(byte index, byte port, byte mask) {
 			pressed_count = 0;
 		pressed_keys[pressed_count++] = index;
 		k->release_mode = RM_PROCESS;
-		byte key_code = peek_key_code(pressed_count-1, index);
+		byte key_code = pressed_key_code(pressed_count-1, index);
 		if (key_code == MB_WHEEL) {
 			game_wheel = true;
 			k->release_mode = MB_WHEEL;
@@ -184,7 +201,7 @@ void handleKey(byte index, byte port, byte mask) {
 			k->release_mode = key_code;
 			mb_to_send |= 1 << (key_code - MB_LEFT);
 		} if (key_code && key_code == autorepeat_key)
-			autorepeat_counter = delay_since_released;
+			autorepeat_counter = delay_since_released + (delay_since_released >> 1);
 	} else {
 		sbyte i = pressed_count;
 		for (;;) {
@@ -203,6 +220,8 @@ void handleKey(byte index, byte port, byte mask) {
 		if (rm != RM_PROCESS && !game_mode) {
 			if (rm == RM_UNSHIFT)
 			    shifts_to_send &= ~to_shift(index);
+			else if (rm == RM_MOUSE)
+				mouse_mode = false;
 			else if (rm == MB_WHEEL)
 				game_wheel = false;
 			else if (rm >= MB_LEFT && rm <= MB_RIGHT)
@@ -255,11 +274,6 @@ void scanRow(byte row) {
 	handleKey(row | 11, f, 1 << 7);
 	handleKey(row | 12, b, 1 << 5);
 	handleKey(row | 13, b, 1 << 6);
-
-	//print(" b="); phex(b & ~7);
-	//print(" d="); phex(d);
-	//print(" f="); phex(f);
-	//print(" c="); phex(c);
 }
 //
 //  ------------------------- MAIN -----------------------
@@ -288,19 +302,16 @@ void init(void) {
 			i->release_mode = RM_UNSHIFT;
 		}
 	}
-	//print(" b="); phex(PINB);
-	//print(" d="); phex(PIND);
-	//print(" f="); phex(PINF);
-	//print(" c="); phex(PINC);
 	if (((PINB | 7) & (PIND | 0xf0) & (PINF | 0x3f) & (PINC | 0xbf)) != 0xff)
 		reflash();
 	PORTB = 0xff;
 	pressed_count = 0;
+	dwheel = 0;
+	mouse_mode = false;
 }
 void loop_step(void) {
 	sword dx;
 	sword dy;
-	sword dwheel;
 	keys_changed = false;
 	PORTB = ~1;
 	scanRow(0);
@@ -325,13 +336,11 @@ void loop_step(void) {
 		usb_keyboard_send();
 		shifts_to_send = keyboard_modifier_keys;
 	}
-	dwheel = 0;
 	if (dx | dy) {
-		if ((game_mode && !game_wheel)) {
-		} else if (keys[32+5].prev_state == 0) {
-			keys[32+5].release_mode = RM_UNSHIFT;
+		if ((game_mode && !game_wheel) || try_mouse_motion()) {
+			dwheel = 0;
 		} else {
-			dwheel = (dx - dy) / 2;
+			dwheel -= dy;
 			dx = dy = 0;
 		}
 		if (!game_mode)
@@ -353,8 +362,9 @@ void loop_step(void) {
 			usb_keyboard_press(0);
 		}
 	}
-	if (dx || dy || dwheel || mouse_buttons != mb_to_send) {
+	if (dx || dy || dwheel / 32 || mouse_buttons != mb_to_send) {
 		mouse_buttons = mb_to_send;
-		usb_mouse_move(clamp_to_sbyte(dx), clamp_to_sbyte(-dy), clamp_to_sbyte(dwheel));
+		usb_mouse_move(clamp_to_sbyte(dx), clamp_to_sbyte(-dy), clamp_to_sbyte(dwheel / 32));
+		dwheel = 0;
 	}
 }

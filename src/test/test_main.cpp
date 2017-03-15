@@ -224,7 +224,7 @@ namespace {
 
 	void check(const char *expected) {
 		string s = acc.str();
-		s = s.substr(0, s.length() -1);
+		s.resize(s.length() - 1);
 		acc.clear();
 		acc.str(std::string());
 		if (s == expected)
@@ -381,21 +381,21 @@ namespace {
 			"(LEFT_CTRL LEFT_SHIFT KEY_DOWN) (LEFT_CTRL LEFT_SHIFT) "
 			"(LEFT_CTRL LEFT_SHIFT KEY_RIGHT) (LEFT_CTRL LEFT_SHIFT) (LEFT_CTRL) ()");
 
-		test_ABba(T::ENTER, T::Q, "+ENTER+Q-Q-ENTER:(KEY_NUM_LOCK) ()");
-		test_ABba(T::ENTER, T::A, "+ENTER+A-A-ENTER:(KEY_CAPS_LOCK) ()");
-		test_ABba(T::ENTER, T::Z, "+ENTER+Z-Z-ENTER:(KEY_SCROLL_LOCK) ()");
-		test_ABba(T::ENTER, T::X, "+ENTER+X-X-ENTER:(KEY_F1) ()");
-		test_ABba(T::ENTER, T::C, "+ENTER+C-C-ENTER:(KEY_F2) ()");
-		test_ABba(T::ENTER, T::V, "+ENTER+V-V-ENTER:(KEY_F3) ()");
-		test_ABba(T::ENTER, T::S, "+ENTER+S-S-ENTER:(KEY_F4) ()");
-		test_ABba(T::ENTER, T::D, "+ENTER+D-D-ENTER:(KEY_F5) ()");
-		test_ABba(T::ENTER, T::F, "+ENTER+F-F-ENTER:(KEY_F6) ()");
-		test_ABba(T::ENTER, T::W, "+ENTER+W-W-ENTER:(KEY_F7) ()");
-		test_ABba(T::ENTER, T::E, "+ENTER+E-E-ENTER:(KEY_F8) ()");
-		test_ABba(T::ENTER, T::R, "+ENTER+R-R-ENTER:(KEY_F9) ()");
-		test_ABba(T::ENTER, T::T, "+ENTER+T-T-ENTER:(KEY_F10) ()");
-		test_ABba(T::ENTER, T::G, "+ENTER+G-G-ENTER:(KEY_F11) ()");
-		test_ABba(T::ENTER, T::B, "+ENTER+B-B-ENTER:(KEY_F12) ()");
+		test_ABba(T::ENTER, T::Q, "+ENTER+Q-Q-ENTER:(KEY_ESC) ()");
+		test_ABba(T::ENTER, T::A, "+ENTER+A-A-ENTER:(KEY_TAB) ()");
+		test_ABba(T::ENTER, T::Z, "+ENTER+Z-Z-ENTER:(KEY_TILDE) ()");
+		test_ABba(T::ENTER, T::X, "+ENTER+X-X-ENTER:(KEY_1) ()");
+		test_ABba(T::ENTER, T::C, "+ENTER+C-C-ENTER:(KEY_2) ()");
+		test_ABba(T::ENTER, T::V, "+ENTER+V-V-ENTER:(KEY_3) ()");
+		test_ABba(T::ENTER, T::S, "+ENTER+S-S-ENTER:(KEY_4) ()");
+		test_ABba(T::ENTER, T::D, "+ENTER+D-D-ENTER:(KEY_5) ()");
+		test_ABba(T::ENTER, T::F, "+ENTER+F-F-ENTER:(KEY_6) ()");
+		test_ABba(T::ENTER, T::W, "+ENTER+W-W-ENTER:(KEY_7) ()");
+		test_ABba(T::ENTER, T::E, "+ENTER+E-E-ENTER:(KEY_8) ()");
+		test_ABba(T::ENTER, T::R, "+ENTER+R-R-ENTER:(KEY_9) ()");
+		test_ABba(T::ENTER, T::T, "+ENTER+T-T-ENTER:(KEY_0) ()");
+		test_ABba(T::ENTER, T::G, "+ENTER+G-G-ENTER:(KEY_EQUAL) ()");
+		test_ABba(T::ENTER, T::B, "+ENTER+B-B-ENTER:(KEY_MINUS) ()");
 
 		// numbers
 		test_ABba(T::SPACE, T::Q, "+SPACE+Q-Q-SPACE:(KEY_ESC) ()");
@@ -426,26 +426,26 @@ namespace {
 		//test_ABba(T::SPACE, T::ENTER, ""); unassigned
 		test_ABba(T::SPACE, T::P, "+SPACE+P-P-SPACE:(KEY_BACKSPACE) ()");
 		test_ABba(T::SPACE, T::COLON, "+SPACE+COLON-COLON-SPACE:(KEY_QUOTE) ()");
-		test_ABba(T::SPACE, T::Y, "+SPACE+Y-Y-SPACE:(KEY_PRINTSCREEN) ()");
-		test_ABba(T::SPACE, T::H, "+SPACE+H-H-SPACE:(KEY_PAUSE) ()");
+		test_ABba(T::SPACE, T::Y, "+SPACE+Y-Y-SPACE:(KEY_HOME) ()");
+		test_ABba(T::SPACE, T::H, "+SPACE+H-H-SPACE:(KEY_END) ()");
 	}
 
 	void test_numpad_plane() {
-		test_numpad_press(T::Q, "numpadQ:(KEY_ESC) ()");
-		test_numpad_press(T::A, "numpadA:(KEY_TAB) ()");
-		test_numpad_press(T::Z, "numpadZ:(KEY_TILDE) ()");
-		test_numpad_press(T::X, "numpadX:(LEFT_SHIFT KEY_1) (LEFT_SHIFT)");
-		test_numpad_press(T::C, "numpadC:(LEFT_SHIFT KEY_2) (LEFT_SHIFT)");
-		test_numpad_press(T::V, "numpadV:(LEFT_SHIFT KEY_3) (LEFT_SHIFT)");
-		test_numpad_press(T::S, "numpadS:(LEFT_SHIFT KEY_4) (LEFT_SHIFT)");
-		test_numpad_press(T::D, "numpadD:(LEFT_SHIFT KEY_5) (LEFT_SHIFT)");
-		test_numpad_press(T::F, "numpadF:(LEFT_SHIFT KEY_6) (LEFT_SHIFT)");
-		test_numpad_press(T::W, "numpadW:(LEFT_SHIFT KEY_7) (LEFT_SHIFT)");
-		test_numpad_press(T::E, "numpadE:(LEFT_SHIFT KEY_8) (LEFT_SHIFT)");
-		test_numpad_press(T::R, "numpadR:(LEFT_SHIFT KEY_9) (LEFT_SHIFT)");
-		test_numpad_press(T::T, "numpadT:(LEFT_SHIFT KEY_0) (LEFT_SHIFT)");
-		test_numpad_press(T::G, "numpadG:(KEY_EQUAL) ()");
-		test_numpad_press(T::B, "numpadB:(KEY_MINUS) ()");
+		test_numpad_press(T::Q, "numpadQ:(KEY_NUM_LOCK) ()");
+		test_numpad_press(T::A, "numpadA:(KEY_CAPS_LOCK) ()");
+		test_numpad_press(T::Z, "numpadZ:(KEY_SCROLL_LOCK) ()");
+		test_numpad_press(T::X, "numpadX:(KEY_F1) ()");
+		test_numpad_press(T::C, "numpadC:(KEY_F2) ()");
+		test_numpad_press(T::V, "numpadV:(KEY_F3) ()");
+		test_numpad_press(T::S, "numpadS:(KEY_F4) ()");
+		test_numpad_press(T::D, "numpadD:(KEY_F5) ()");
+		test_numpad_press(T::F, "numpadF:(KEY_F6) ()");
+		test_numpad_press(T::W, "numpadW:(KEY_F7) ()");
+		test_numpad_press(T::E, "numpadE:(KEY_F8) ()");
+		test_numpad_press(T::R, "numpadR:(KEY_F9) ()");
+		test_numpad_press(T::T, "numpadT:(KEY_F10) ()");
+		test_numpad_press(T::G, "numpadG:(KEY_F11) ()");
+		test_numpad_press(T::B, "numpadB:(KEY_F12) ()");
 
 		test_numpad_press(T::Y, "numpadY:(KEYPAD_ASTERIX) ()");
 		test_numpad_press(T::H, "numpadH:(KEYPAD_PLUS) ()");
@@ -463,7 +463,7 @@ namespace {
 		test_numpad_press(T::COLON, "numpadCOLON:(KEYPAD_MINUS) ()");
 		test_numpad_press(T::SLASH, "numpadSLASH:(KEYPAD_PERIOD) ()");
 
-		test("numeric sequence");
+		test("F sequence");
 		on(T::SPACE); on(T::ENTER);
 		on(T::Q); off(T::Q);
 		on(T::X); off(T::X);
@@ -471,64 +471,76 @@ namespace {
 		off(T::D); off(T::R);
 		on(T::G); off(T::G);
 		off(T::SPACE); off(T::ENTER);
-		check("numeric sequence:(KEY_ESC) () (LEFT_SHIFT KEY_1) (LEFT_SHIFT) (LEFT_SHIFT KEY_5) (LEFT_SHIFT) "
-			"(LEFT_SHIFT KEY_9) (LEFT_SHIFT) (KEY_EQUAL) ()");
+		check("F sequence:(KEY_NUM_LOCK) () (KEY_F1) () (KEY_F5) () (KEY_F9) () (KEY_F11) ()");
 	}
 	void test_mouse() {
 		test("wheel");
-		move(10, 0);
-		check("wheel:[0 0 5]");
+		move(0, 64);
+		check("wheel:[0 0 -2]");
 
 		test("ctrl+shift+wheel");
 		on(T::A);
 		on(T::F);
-		move(10, 0);
+		move(0, 64);
 		off(T::A);
 		off(T::F);
-		check("ctrl+shift+wheel:(LEFT_CTRL LEFT_SHIFT) [0 0 5] (LEFT_CTRL) ()");
+		check("ctrl+shift+wheel:(LEFT_CTRL LEFT_SHIFT) [0 0 -2] (LEFT_CTRL) ()");
 
 		test("mouse move");
-		on(T::SPACE);
+		on(T::O);
 		move(10, -10);
-		off(T::SPACE);
+		off(T::O);
 		check("mouse move:[-10 -10 0]");
 
 		test("ctrl+mouse move");
-		on(T::SPACE); on(T::F);
+		on(T::O); on(T::F);
 		move(10, -10);
-		off(T::SPACE); off(T::F);
+		off(T::O); off(T::F);
 		check("ctrl+mouse move:(LEFT_CTRL) [-10 -10 0] ()");
 
 		test("click-lb");
-		on(T::SPACE); on(T::U);
-		off(T::U); off(T::SPACE);
-		check("click-lb:[L0 0 0] [0 0 0]");
+		on(T::W); 
+		move(1, 0);		
+		on(T::U); off(T::U);
+		off(T::W);
+		check("click-lb:[-1 0 0] [L0 0 0] [0 0 0]");
 
 		test("click-lb-reversed");
-		on(T::SPACE); on(T::U);
-		off(T::SPACE); off(T::U); 
-		check("click-lb-reversed:[L0 0 0] [0 0 0]");
+		on(T::O); 
+		move(1, 0);
+		on(T::U);
+		off(T::O); off(T::U); 
+		check("click-lb-reversed:[-1 0 0] [L0 0 0] [0 0 0]");
 
 		test("drag-rb-with-shift");
-		on(T::SPACE); move(10, -10);
+		on(T::O); move(10, -10);
 		on(T::I); move(11, 11);
 		on(T::A); move(-12, 12);
 		off(T::A); move(-13, -13);
 		off(T::I); move(14, 14);
-		off(T::SPACE);
+		off(T::O);
 		check("drag-rb-with-shift:"
 			"[-10 -10 0] [R0 0 0] [R-11 11 0] "
 			"(LEFT_SHIFT) [R12 12 0] () [R13 -13 0] "
 			"[0 0 0] [-14 14 0]");
 
 		test("drag-rb-with-shift-reverse");
-		on(T::SPACE);
-		on(T::I); move(11, 11);
+		on(T::O); move(11, 11);
+		on(T::I); 
 		on(T::A); move(-12, 12);
+		off(T::O);
+		off(T::A); move(-32, -32);
+		off(T::I); move(64, 64);
+		check("drag-rb-with-shift-reverse:[-11 11 0] [R0 0 0] (LEFT_SHIFT) [R12 12 0] () [R0 0 1] [0 0 0] [0 0 -2]");
+
+		test("kbd to mouse");
+		on(T::O); off(T::O);
+		on(T::SPACE);
+		move(1,1);
+		on(T::A);
 		off(T::SPACE);
-		off(T::A); move(-13, -13);
-		off(T::I); move(14, 14);
-		check("drag-rb-with-shift-reverse:[R0 0 0] [R-11 11 0] (LEFT_SHIFT) [R12 12 0] () [0 0 0]");
+		off(T::A);
+		check("kbd to mouse:(KEY_O) () [-1 1 0] (KEY_A) ()");
 	}
 
 	void test_autorepeat() {
@@ -547,10 +559,10 @@ namespace {
 		test("unshift during autorepeat");
 		on(T::COLON);
 		on(T::Q); off(T::Q);
-		on(T::Q); loop_step(); loop_step();
+		on(T::Q); loop_step(); loop_step(); loop_step(); loop_step(); loop_step(); loop_step(); 
 		off(T::COLON);
 		loop_step(); loop_step(); loop_step(); off(T::Q);
-		check("unshift during autorepeat:(LEFT_SHIFT KEY_Q) (LEFT_SHIFT) (LEFT_SHIFT KEY_Q) (LEFT_SHIFT) () (KEY_Q) () (KEY_Q) ()");
+		check("unshift during autorepeat:(LEFT_SHIFT KEY_Q) (LEFT_SHIFT) (LEFT_SHIFT KEY_Q) (LEFT_SHIFT) () (KEY_Q) () (KEY_Q) () (KEY_Q) ()");
 	}
 };
 
@@ -589,9 +601,9 @@ sbyte __cdecl usb_mouse_move(sbyte dx, sbyte dy, sbyte wheel) {
 	if (mouse_buttons & 1)
 		acc << "L";
 	if (mouse_buttons & 2)
-		acc << "M";
-	if (mouse_buttons & 4)
 		acc << "R";
+	if (mouse_buttons & 4)
+		acc << "M";
 	acc << int(-dx) << " " << int(-dy) << " " << int(wheel) << "] ";
 	return 1;
 }
@@ -610,6 +622,18 @@ int main() {
 	test("reflash", &T::Q);
 	check("reflash:reflash");
 
+	test("{}");
+	on(T::A);on(T::SPACE);
+	on(T::COMMA); off(T::COMMA);
+	on(T::PERIOD); off(T::PERIOD);
+	off(T::A);
+	on(T::J); off(T::J);
+	off(T::SPACE);
+	on(T::ENTER);
+	off(T::ENTER);
+	check("{}:(LEFT_SHIFT KEY_LEFT_BRACE) (LEFT_SHIFT) (LEFT_SHIFT KEY_RIGHT_BRACE) (LEFT_SHIFT) () "
+		"(KEY_LEFT) () (KEY_ENTER) ()");
+
 	test_main_plane();
 	test_side_planes();
 	test_numpad_plane();
@@ -617,7 +641,7 @@ int main() {
 	test_autorepeat();
 
 	/*test("game mode");
-	on(T::SPACE); on(T::SLASH);
+	on(T::SPACE); move(1,1); on(T::SLASH);
 	off(T::SLASH); off(T::SPACE);
 	on(T::E);
 	on(T::F);
@@ -626,6 +650,7 @@ int main() {
 	off(T::SPACE);
 	off(T::E);
 	off(T::F);
+	on(T::SLASH); off(T::SLASH);
 	check("");*/
 
 	printf("%s\n", has_errors ? "failed" : "Ok");
