@@ -49,10 +49,16 @@ const byte PROGMEM numpad_keys[] = {
 	KEY_SCROLL_LOCK, KEY_F1, KEY_F2, KEY_F3, KEY_F12, 0, 0, 0,   KEYPAD_PERIOD, KEYPAD_3, KEYPAD_2, KEYPAD_1, KEYPAD_0,       0, 0, 0, 
 };
 
+const byte PROGMEM fn_keys[] = {
+	0, 0, 0, 0, 0, 0, 0, 0,   0,       0,          0,          0,        KEY_PRINTSCREEN, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,   0,       0,          0,          0,        KEY_PAUSE,       0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,   MB_GAME, KEY_VOL_UP, KEY_VOL_DN, KEY_MUTE, 0,               0, 0, 0,
+};
+
 const byte PROGMEM mouse_keys[] = {
-	MB_MID, MB_RIGHT, MB_RIGHT, MB_LEFT, MB_LEFT, MB_LEFT, 0, 0,  MB_MID,  MB_RIGHT,   MB_RIGHT,   MB_LEFT,  MB_LEFT,         MB_LEFT, 0, 0,
-	0,      0,        0,        0,       0,       MB_LEFT, 0, 0,  0,       0,          0,          0,        KEY_PRINTSCREEN, MB_LEFT, 0, 0,
-	0,      0,        0,        0,       0,       MB_LEFT, 0, 0,  MB_GAME, KEY_VOL_DN, KEY_VOL_UP, KEY_MUTE, KEY_PAUSE,       MB_LEFT, 0, 0,
+	MB_MID, MB_RIGHT, MB_RIGHT, MB_LEFT, MB_LEFT, MB_LEFT, 0, 0,  MB_MID, MB_RIGHT, MB_RIGHT, MB_LEFT, MB_LEFT, MB_LEFT, 0, 0,
+	0,      0,        0,        0,       0,       MB_LEFT, 0, 0,  0,      0,        0,        0,       0,       MB_LEFT, 0, 0,
+	0,      0,        0,        0,       0,       MB_LEFT, 0, 0,  0,      0,        0,        0,       0,       MB_LEFT, 0, 0,
 };
 
 const byte PROGMEM imm_game_mode[] = {
@@ -84,7 +90,6 @@ byte pressed_count;
 sword dwheel;
 
 bool game_mode;
-bool game_wheel;
 byte shifts_to_send;
 byte mb_to_send;
 byte autorepeat_key;
@@ -130,6 +135,8 @@ byte pressed_key_code(sbyte pos, byte index) {
 		byte s = pressed_keys[pos];
 		if ((s & 7) == 5)
 			plane = plane != basic_keys ? numpad_keys : numeric_arrow_keys;
+		else if ((s & 7) == 4)
+			plane = fn_keys;
 	}
 	return pgm_read_byte(plane + index);
 }
@@ -157,13 +164,14 @@ byte get_key_code(sbyte pos, byte index) {
 		byte s = pressed_keys[pos];
 		if ((s & 7) == 5)
 			plane = plane != basic_keys ? numpad_keys : numeric_arrow_keys;
+		else if ((s & 7) == 4)
+			plane = fn_keys;
 		else if ((s & 8) != (index & 8))
 			shifts_to_send |= to_shift(s);
 		else if ((index & 7) == 5) {
 			shifts_to_send |= to_shift(s);
 			shifts_alone = true;
-		}
-		else
+		} else
 			continue;
 		if (keys[s].release_mode == RM_PROCESS)
 			keys[s].release_mode = RM_UNSHIFT;
@@ -193,10 +201,7 @@ void handleKey(byte index, byte port, byte mask) {
 		pressed_keys[pressed_count++] = index;
 		k->release_mode = RM_PROCESS;
 		byte key_code = pressed_key_code(pressed_count-1, index);
-		if (key_code == MB_WHEEL) {
-			game_wheel = true;
-			k->release_mode = MB_WHEEL;
-		} else if (key_code >= MB_LEFT && key_code <= MB_RIGHT) {
+		if (key_code >= MB_LEFT && key_code <= MB_RIGHT) {
 			key_code = get_key_code(pressed_count-1, index);
 			k->release_mode = key_code;
 			mb_to_send |= 1 << (key_code - MB_LEFT);
@@ -222,8 +227,6 @@ void handleKey(byte index, byte port, byte mask) {
 			    shifts_to_send &= ~to_shift(index);
 			else if (rm == RM_MOUSE)
 				mouse_mode = false;
-			else if (rm == MB_WHEEL)
-				game_wheel = false;
 			else if (rm >= MB_LEFT && rm <= MB_RIGHT)
 				mb_to_send &= ~(1 << (rm - MB_LEFT));
 			k->release_mode = RM_PROCESS;
@@ -233,8 +236,6 @@ void handleKey(byte index, byte port, byte mask) {
 		if (key_code == MB_GAME) {
 			game_mode = !game_mode;
 			drop_pressed_keys();
-			if (!game_mode)
-				game_wheel = false;
 		} else if (key_code < KEY_SPECIAL && !game_mode) {
 			keyboard_modifier_keys = shifts_to_send;
 			usb_keyboard_press(key_code);
@@ -280,7 +281,6 @@ void scanRow(byte row) {
 //
 void init(void) {
 	game_mode = false;
-	game_wheel = false;
 	shifts_to_send = keyboard_modifier_keys = 0;
 	mb_to_send = mouse_buttons = 0;
 	autorepeat_key = 0;
@@ -324,7 +324,7 @@ void loop_step(void) {
 		byte keys_to_send = 0;
 		keyboard_modifier_keys = 0;
 		for (byte i = 0; i < pressed_count; i++) {
-			byte key = pgm_read_byte(imm_game_mode + i);
+			byte key = pgm_read_byte(imm_game_mode + pressed_keys[i]);
 			if (key < KEY_SPECIAL){
 				if (keys_to_send < 6)
 					keyboard_keys[keys_to_send++] = key;
@@ -337,7 +337,7 @@ void loop_step(void) {
 		shifts_to_send = keyboard_modifier_keys;
 	}
 	if (dx | dy) {
-		if ((game_mode && !game_wheel) || try_mouse_motion()) {
+		if ((game_mode && !keys[8].prev_state) || try_mouse_motion()) {
 			dwheel = 0;
 		} else {
 			dwheel -= dy;

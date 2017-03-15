@@ -428,6 +428,11 @@ namespace {
 		test_ABba(T::SPACE, T::COLON, "+SPACE+COLON-COLON-SPACE:(KEY_QUOTE) ()");
 		test_ABba(T::SPACE, T::Y, "+SPACE+Y-Y-SPACE:(KEY_HOME) ()");
 		test_ABba(T::SPACE, T::H, "+SPACE+H-H-SPACE:(KEY_END) ()");
+		test_ABba(T::G, T::Y, "+G+Y-Y-G:(KEY_PRINTSCREEN) ()");
+		test_ABba(T::G, T::H, "+G+H-H-G:(KEY_PAUSE) ()");
+		test_ABba(T::G, T::M, "+G+M-M-G:(KEY_MUTE) ()");
+		test_ABba(T::G, T::COMMA, "+G+COMMA-COMMA-G:(KEY_VOL_DN) ()");
+		test_ABba(T::G, T::PERIOD, "+G+PERIOD-PERIOD-G:(KEY_VOL_UP) ()");
 	}
 
 	void test_numpad_plane() {
@@ -640,18 +645,20 @@ int main() {
 	test_mouse();
 	test_autorepeat();
 
-	/*test("game mode");
-	on(T::SPACE); move(1,1); on(T::SLASH);
-	off(T::SLASH); off(T::SPACE);
+	test("game mode");
+	on(T::G); on(T::SLASH);
+	off(T::SLASH); off(T::G);
 	on(T::E);
 	on(T::F);
 	on(T::SPACE);
+	on(T::I);
 	move(10, 20);
+	off(T::I);
 	off(T::SPACE);
 	off(T::E);
 	off(T::F);
 	on(T::SLASH); off(T::SLASH);
-	check("");*/
+	check("");
 
 	printf("%s\n", has_errors ? "failed" : "Ok");
 	return has_errors;
