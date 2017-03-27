@@ -1,3 +1,6 @@
+Firmware and STLs for ergonomic keyboard and trackball 32xe
+https://hackaday.io/project/19366-32xe
+
 Code is tested with Teensy 2.0 @16MHz
 
 --Setup--
